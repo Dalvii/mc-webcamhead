@@ -14,6 +14,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -64,10 +65,17 @@ public class WebcamheadClient implements ClientModInitializer {
         // Register tick event for updating texture
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
 
-        // Initialize multiplayer streaming if enabled
-        if (ModConfig.isMultiplayerEnabled()) {
-            initializeMultiplayer();
-        }
+        // Register disconnect event to stop webcam when leaving a world/server
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            onDisconnect(client);
+        });
+
+        // Register join event to initialize multiplayer when joining a world/server
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            if (ModConfig.isMultiplayerEnabled()) {
+                initializeMultiplayer();
+            }
+        });
 
         // Register render event for rendering video panels
         // DISABLED: We're using skin overlay mode instead of 3D panels
@@ -391,5 +399,27 @@ public class WebcamheadClient implements ClientModInitializer {
         if (ModConfig.isMultiplayerEnabled()) {
             initializeMultiplayer();
         }
+    }
+
+    /**
+     * Called when the client disconnects from a world/server
+     */
+    private void onDisconnect(MinecraftClient client) {
+        LOGGER.info("Disconnected from world/server, stopping webcam");
+
+        // Stop webcam if active
+        if (webcamActive) {
+            webcamActive = false;
+            stopWebcam(client);
+        }
+
+        // Disconnect from signaling server
+        if (signalingClient != null) {
+            signalingClient.disconnect();
+            signalingClient = null;
+        }
+
+        // Reset video stream client
+        videoStreamClient = null;
     }
 }

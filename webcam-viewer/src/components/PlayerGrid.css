@@ -1,0 +1,83 @@
+.player-grid {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Responsive grid based on player count */
+.player-grid.player-count-1 {
+  grid-template-columns: 1fr;
+  max-width: 600px;
+}
+
+.player-grid.player-count-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.player-grid.player-count-3 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.player-grid.player-count-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* For more than 4 players */
+@media (min-width: 1200px) {
+  .player-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  .player-grid.player-count-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .player-grid.player-count-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .player-grid.player-count-3,
+  .player-grid.player-count-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .player-grid {
+    grid-template-columns: 1fr !important;
+    padding: 1rem;
+    gap: 1rem;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #666;
+  text-align: center;
+  padding: 2rem;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h2 {
+  margin: 0.5rem 0;
+  color: #999;
+  font-weight: 500;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #777;
+  font-size: 0.9rem;
+}

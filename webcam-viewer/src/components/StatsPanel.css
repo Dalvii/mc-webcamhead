@@ -1,0 +1,50 @@
+.stats-panel {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.stat-value {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.connection-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.connection-status.connected .stat-value {
+  color: #4caf50;
+}
+
+.connection-status.disconnected .stat-value {
+  color: #f44336;
+}
+
+@media (max-width: 768px) {
+  .stats-panel {
+    gap: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .stat-item {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+}

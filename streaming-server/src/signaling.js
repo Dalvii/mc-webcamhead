@@ -12,14 +12,22 @@ export class SignalingManager {
      * Setup Socket.io event handlers
      */
     setupHandlers(socket) {
+        console.log(`[Signaling] Setting up handlers for socket ${socket.id}`);
+
         // Player joins with Minecraft UUID
-        socket.on('player:join', (data) => this.handlePlayerJoin(socket, data));
+        socket.on('player:join', (data) => {
+            console.log(`[Signaling] Received player:join event:`, typeof data, data);
+            this.handlePlayerJoin(socket, data);
+        });
 
         // Player leaves
         socket.on('disconnect', () => this.handlePlayerLeave(socket));
 
         // Webcam toggle
-        socket.on('webcam:toggle', (data) => this.handleWebcamToggle(socket, data));
+        socket.on('webcam:toggle', (data) => {
+            console.log(`[Signaling] Received webcam:toggle event:`, typeof data, data);
+            this.handleWebcamToggle(socket, data);
+        });
 
         // Video streaming
         socket.on('video:frame', (data) => this.handleVideoFrame(socket, data));
@@ -29,6 +37,17 @@ export class SignalingManager {
      * Handle player join
      */
     handlePlayerJoin(socket, data) {
+        // Parse data if it's a string (from Java client)
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                console.error('[Signaling] Failed to parse player:join data:', e);
+                socket.emit('error', { message: 'Invalid JSON format' });
+                return;
+            }
+        }
+
         const { minecraftUUID, playerName, roomId = 'default' } = data;
 
         if (!minecraftUUID || !playerName) {
@@ -54,13 +73,15 @@ export class SignalingManager {
             .map(socketId => this.playerManager.getPlayer(socketId))
             .filter(p => p && p.socketId !== socket.id);
 
-        socket.emit('player:joined', {
+        const joinedData = JSON.stringify({
             player,
             existingPlayers: playersInRoom
         });
+        socket.emit('player:joined', joinedData);
 
         // Notify others in the room
-        socket.to(roomId).emit('player:new', { player });
+        const newPlayerData = JSON.stringify({ player });
+        socket.to(roomId).emit('player:new', newPlayerData);
 
         console.log(`[Signaling] Player ${playerName} joined room ${roomId}`);
     }
@@ -75,10 +96,11 @@ export class SignalingManager {
 
             // Notify others in the room
             if (roomId) {
-                socket.to(roomId).emit('player:left', {
+                const leftData = JSON.stringify({
                     minecraftUUID: player.minecraftUUID,
                     playerName: player.playerName
                 });
+                socket.to(roomId).emit('player:left', leftData);
             }
 
             // Remove from room and player list
@@ -93,6 +115,16 @@ export class SignalingManager {
      * Handle webcam toggle
      */
     handleWebcamToggle(socket, data) {
+        // Parse data if it's a string (from Java client)
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                console.error('[Signaling] Failed to parse webcam:toggle data:', e);
+                return;
+            }
+        }
+
         const { active } = data;
         const player = this.playerManager.getPlayer(socket.id);
 
@@ -105,11 +137,12 @@ export class SignalingManager {
         const roomId = this.roomManager.getRoomForPlayer(socket.id);
         if (roomId) {
             // Broadcast to all in room including sender
-            this.io.to(roomId).emit('webcam:status', {
+            const statusData = JSON.stringify({
                 minecraftUUID: player.minecraftUUID,
                 playerName: player.playerName,
                 active
             });
+            this.io.to(roomId).emit('webcam:status', statusData);
         }
 
         console.log(`[Signaling] Player ${player.playerName} webcam ${active ? 'ON' : 'OFF'}`);
@@ -119,6 +152,16 @@ export class SignalingManager {
      * Handle video frame
      */
     handleVideoFrame(socket, data) {
+        // Parse data if it's a string (from Java client)
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                console.error('[Signaling] Failed to parse video:frame data:', e);
+                return;
+            }
+        }
+
         const { frameData } = data;
         const fromPlayer = this.playerManager.getPlayer(socket.id);
 
@@ -132,11 +175,12 @@ export class SignalingManager {
             const playersInRoom = this.roomManager.getPlayersInRoom(roomId).length;
 
             // Broadcast frame to all other players in the room
-            socket.to(roomId).emit('video:frame', {
+            const framePayload = JSON.stringify({
                 fromUUID: fromPlayer.minecraftUUID,
                 fromName: fromPlayer.playerName,
                 frameData: frameData
             });
+            socket.to(roomId).emit('video:frame', framePayload);
 
             // Log occasionally (every 100 frames)
             if (!this.frameCount) this.frameCount = {};

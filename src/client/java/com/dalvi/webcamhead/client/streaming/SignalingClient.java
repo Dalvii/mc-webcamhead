@@ -133,8 +133,11 @@ public class SignalingClient {
         data.addProperty("playerName", playerName);
         data.addProperty("roomId", roomId);
 
-        socket.emit("player:join", data);
-        LOGGER.info("Sent join request for room: {}", roomId);
+        // Convert JsonObject to plain Object for Socket.IO
+        String jsonString = gson.toJson(data);
+
+        socket.emit("player:join", jsonString);
+        LOGGER.info("Sent join request for room: {} with data: {}", roomId, jsonString);
     }
 
     /**
@@ -149,7 +152,8 @@ public class SignalingClient {
         JsonObject data = new JsonObject();
         data.addProperty("active", active);
 
-        socket.emit("webcam:toggle", data);
+        String jsonString = gson.toJson(data);
+        socket.emit("webcam:toggle", jsonString);
         LOGGER.info("Sent webcam toggle: {}", active);
     }
 
@@ -164,7 +168,8 @@ public class SignalingClient {
         JsonObject data = new JsonObject();
         data.addProperty("frameData", frameData);
 
-        socket.emit("video:frame", data);
+        String jsonString = gson.toJson(data);
+        socket.emit("video:frame", jsonString);
     }
 
     // Event handlers
