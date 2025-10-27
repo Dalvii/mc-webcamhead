@@ -4,6 +4,7 @@
   "package": "com.dalvi.webcamhead.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "PlayerEntityModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

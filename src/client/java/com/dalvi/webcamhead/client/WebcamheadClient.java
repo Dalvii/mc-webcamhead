@@ -2,10 +2,12 @@ package com.dalvi.webcamhead.client;
 
 import com.dalvi.webcamhead.client.command.WebcamCommand;
 import com.dalvi.webcamhead.client.config.ModConfig;
+import com.dalvi.webcamhead.client.render.SkinOverlayRenderer;
 import com.dalvi.webcamhead.client.video.PlayerVideoState;
 import com.dalvi.webcamhead.client.video.VideoStateManager;
 import com.dalvi.webcamhead.client.webcam.WebcamManager;
 import com.dalvi.webcamhead.client.webcam.WebcamTextureManager;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -97,11 +99,15 @@ public class WebcamheadClient implements ClientModInitializer {
             toggleWebcam(client);
         }
 
-        // Update webcam texture if active
-        if (webcamActive && webcamManager != null && textureManager != null) {
+        // Update webcam texture and skin if active
+        if (webcamActive && webcamManager != null && textureManager != null && client.player != null) {
             BufferedImage frame = webcamManager.getLatestFrame();
             if (frame != null) {
+                // Update the panel texture
                 textureManager.updateTexture(frame);
+
+                // Update the skin overlay
+                SkinOverlayRenderer.updateSkinWithWebcam(client.player.getUuid(), frame);
             }
         }
     }
@@ -153,6 +159,11 @@ public class WebcamheadClient implements ClientModInitializer {
                         );
                         textureManager.initialize();
 
+                        // Initialize modified skin for overlay
+                        if (client.player instanceof AbstractClientPlayerEntity) {
+                            SkinOverlayRenderer.initializeModifiedSkin((AbstractClientPlayerEntity) client.player);
+                        }
+
                         // Register player video state
                         PlayerVideoState videoState = new PlayerVideoState(
                             textureManager.getTextureId(),
@@ -162,10 +173,10 @@ public class WebcamheadClient implements ClientModInitializer {
                         VideoStateManager.getInstance().setPlayerVideo(client.player.getUuid(), videoState);
 
                         if (client.player != null) {
-                            client.player.sendMessage(Text.literal("§aWebcam enabled"), false);
+                            client.player.sendMessage(Text.literal("§aWebcam enabled (skin overlay mode)"), false);
                         }
 
-                        LOGGER.info("Webcam started for local player");
+                        LOGGER.info("Webcam started for local player with skin overlay");
                     } catch (Exception e) {
                         LOGGER.error("Error initializing texture", e);
                         if (client.player != null) {
@@ -196,6 +207,9 @@ public class WebcamheadClient implements ClientModInitializer {
         }
 
         if (client.player != null) {
+            // Clean up modified skin
+            SkinOverlayRenderer.cleanupModifiedSkin(client.player.getUuid());
+
             VideoStateManager.getInstance().removePlayerVideo(client.player.getUuid());
             client.player.sendMessage(Text.literal("§eWebcam disabled"), false);
         }
