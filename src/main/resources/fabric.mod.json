@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "webcamhead",
+  "version": "${version}",
+  "name": "Webcam Head",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/webcamhead/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "com.dalvi.webcamhead.client.WebcamheadDataGenerator"
+    ],
+    "client": [
+      "com.dalvi.webcamhead.client.WebcamheadClient"
+    ],
+    "main": [
+      "com.dalvi.webcamhead.Webcamhead"
+    ]
+  },
+  "mixins": [
+    "webcamhead.mixins.json",
+    {
+      "config": "webcamhead.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
