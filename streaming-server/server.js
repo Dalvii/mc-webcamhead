@@ -93,7 +93,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
     console.log(`
 ╔══════════════════════════════════════════════════════════╗
-║  WebcamHead WebRTC Signaling Server                     ║
+║  WebcamHead Video Streaming Server                      ║
 ║  Status: RUNNING                                         ║
 ║  Port: ${PORT}                                             ║
 ║  WebSocket: ws://localhost:${PORT}                        ║

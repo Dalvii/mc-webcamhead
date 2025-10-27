@@ -8,17 +8,21 @@ This is a Fabric mod for Minecraft 1.21.3 called "Webcam Head" that displays web
 
 ### Features
 - Real-time webcam capture and rendering
-- 3D billboard panel above player's head
+- Webcam displayed on player skin (128x128 overlay on face)
 - Toggle webcam on/off with keybinding (default: V key)
 - Multiple camera support with device selection
 - Asynchronous webcam startup (non-blocking)
 - Configurable resolution and FPS
-- Local rendering (P2P networking to be implemented later)
+- Multiplayer streaming via Socket.IO signaling server
+- Video frame compression and streaming to other players
 
 ### In-Game Commands
 - `/webcam list` - List all available webcam devices
 - `/webcam device <index>` - Select a specific camera (0, 1, 2, etc.)
 - `/webcam info` - Show current webcam configuration
+- `/webcam state` - Show webcam and connection status
+- `/webcam stats` - Show streaming statistics
+- `/webcam join <roomId>` - Join a specific streaming room
 
 ## Build System
 
@@ -133,9 +137,15 @@ com.dalvi.webcamhead.client/
 │   ├── PlayerVideoState.java - Per-player video state
 │   └── VideoStateManager.java - Global video state manager
 ├── render/
-│   └── VideoPanelRenderer.java - 3D panel rendering
+│   ├── VideoPanelRenderer.java - 3D panel rendering (legacy)
+│   └── SkinOverlayRenderer.java - Skin overlay rendering
+├── streaming/
+│   ├── SignalingClient.java - Socket.IO client for signaling server
+│   └── VideoStreamClient.java - Video frame compression and streaming
+├── command/
+│   └── WebcamCommand.java - In-game commands
 └── config/
-    └── ModConfig.java - Configuration (resolution, FPS, render mode)
+    └── ModConfig.java - Configuration (resolution, FPS, server URL, room ID)
 
 com.dalvi.webcamhead.mixin.client/
 └── PlayerEntityRendererMixin.java - Injects video rendering into player render
@@ -145,15 +155,44 @@ com.dalvi.webcamhead.mixin.client/
 
 - **JavaCV 1.5.10** - Webcam capture (OpenCV wrapper)
 - **OpenCV 4.9.0** - Computer vision library for frame processing
+- **Socket.IO Client 2.1.0** - Real-time communication with streaming server
+- **Gson 2.10.1** - JSON serialization/deserialization
+- **Java-WebSocket 1.5.6** - WebSocket support for Socket.IO
 - Native binaries included for macOS ARM64 (add other platforms as needed)
 
 ## How It Works
 
-1. **Webcam Capture**: `WebcamManager` uses JavaCV to capture frames from the default webcam in a background thread
+### Local Webcam Rendering
+1. **Webcam Capture**: `WebcamManager` uses JavaCV to capture frames from the webcam in a background thread
 2. **Texture Upload**: `WebcamTextureManager` converts BufferedImage frames to NativeImage and uploads to GPU as OpenGL textures
-3. **State Management**: `VideoStateManager` tracks which players have active video feeds
-4. **Rendering**: `PlayerEntityRendererMixin` hooks into player rendering and calls `VideoPanelRenderer` to draw a textured quad above the player's head
-5. **Billboard Effect**: The panel always faces the camera for better visibility
+3. **Skin Overlay**: `SkinOverlayRenderer` modifies the player's skin texture to display the webcam feed on the face (128x128 area)
+4. **State Management**: `VideoStateManager` tracks which players have active video feeds
+
+### Multiplayer Streaming
+1. **Connection**: `SignalingClient` connects to the Node.js streaming server via Socket.IO
+2. **Frame Compression**: `VideoStreamClient` compresses frames to JPEG (quality 70%) and encodes to Base64
+3. **Streaming**: Frames are sent to the server at 10 FPS, which relays them to other players in the same room
+4. **Reception**: Other players receive frames, decode them, and update the corresponding player's skin overlay
+5. **Rooms**: Players are grouped by room ID to control who sees whose webcam
+
+## Streaming Server
+
+The project includes a Node.js streaming server (`streaming-server/`) that handles video relay between players:
+
+**Start the server:**
+```bash
+cd streaming-server
+npm install
+npm start
+```
+
+The server runs on port 3000 by default and provides:
+- Socket.IO event handling for player connections
+- Room management for grouping players
+- Video frame relay between players in the same room
+- REST API for monitoring (GET /api/status, /api/rooms, /api/players)
+
+**Configuration:** Set server URL in `ModConfig` (default: `http://localhost:3000`)
 
 ## Development Notes
 
@@ -161,13 +200,18 @@ When adding new mixins, place them in the appropriate package and register them 
 
 The webcam runs in a separate thread to avoid blocking the game loop. Frame updates happen every client tick in `WebcamheadClient.onClientTick()`.
 
+Multiplayer streaming is initialized automatically when `ModConfig.isMultiplayerEnabled()` returns true. The client connects to the streaming server on world join.
+
 ### Performance Considerations
-- Default resolution is 320x240 @ 15fps for balance between quality and performance
+- **Webcam capture**: 320x240 @ 15fps (configurable)
+- **Streaming**: 128x128 JPEG @ 10fps (~8KB per frame, ~80KB/s per player)
+- **Bandwidth**: For N players streaming, each player uses ~80KB/s upload and ~80*(N-1) KB/s download
+- **Recommended**: Maximum 10 players per room for optimal performance
 - Texture upload happens on the main thread but should be fast enough for real-time updates
 - JavaCV natives are ~50MB, included in the mod JAR
 
 ### Future Work
-- WebRTC integration for P2P video streaming between players
-- Skin overlay mode (render video on player face texture)
-- Server-side signaling for WebRTC connections
 - Privacy controls (whitelist/blacklist players)
+- Adaptive quality based on network conditions
+- P2P WebRTC for improved latency (currently uses server relay)
+- Proximity-based streaming (only stream to nearby players)

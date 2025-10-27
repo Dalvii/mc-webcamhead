@@ -7,6 +7,8 @@ import com.dalvi.webcamhead.client.video.PlayerVideoState;
 import com.dalvi.webcamhead.client.video.VideoStateManager;
 import com.dalvi.webcamhead.client.webcam.WebcamManager;
 import com.dalvi.webcamhead.client.webcam.WebcamTextureManager;
+import com.dalvi.webcamhead.client.streaming.SignalingClient;
+import com.dalvi.webcamhead.client.streaming.VideoStreamClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -26,13 +28,24 @@ public class WebcamheadClient implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger("WebcamHead");
     private static final String KEY_CATEGORY = "key.categories.webcamhead";
 
+    private static WebcamheadClient instance;
+
     private WebcamManager webcamManager;
     private WebcamTextureManager textureManager;
     private KeyBinding toggleWebcamKey;
     private boolean webcamActive = false;
 
+    // Multiplayer streaming
+    private SignalingClient signalingClient;
+    private VideoStreamClient videoStreamClient;
+
+    public static WebcamheadClient getInstance() {
+        return instance;
+    }
+
     @Override
     public void onInitializeClient() {
+        instance = this;
         LOGGER.info("Initializing WebcamHead mod");
 
         // Register commands
@@ -50,6 +63,11 @@ public class WebcamheadClient implements ClientModInitializer {
 
         // Register tick event for updating texture
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
+
+        // Initialize multiplayer streaming if enabled
+        if (ModConfig.isMultiplayerEnabled()) {
+            initializeMultiplayer();
+        }
 
         // Register render event for rendering video panels
         // DISABLED: We're using skin overlay mode instead of 3D panels
@@ -111,6 +129,11 @@ public class WebcamheadClient implements ClientModInitializer {
 
                 // Update the skin overlay
                 SkinOverlayRenderer.updateSkinWithWebcam(client.player.getUuid(), frame);
+
+                // Send frame to other players if multiplayer is enabled
+                if (videoStreamClient != null) {
+                    videoStreamClient.sendFrame(frame);
+                }
             }
         }
     }
@@ -175,6 +198,11 @@ public class WebcamheadClient implements ClientModInitializer {
                         );
                         VideoStateManager.getInstance().setPlayerVideo(client.player.getUuid(), videoState);
 
+                        // Notify signaling server if multiplayer is enabled
+                        if (signalingClient != null && signalingClient.isConnected()) {
+                            signalingClient.sendWebcamToggle(true);
+                        }
+
                         if (client.player != null) {
                             client.player.sendMessage(Text.literal("§aWebcam enabled (skin overlay mode)"), false);
                         }
@@ -214,9 +242,154 @@ public class WebcamheadClient implements ClientModInitializer {
             SkinOverlayRenderer.cleanupModifiedSkin(client.player.getUuid());
 
             VideoStateManager.getInstance().removePlayerVideo(client.player.getUuid());
+
+            // Notify signaling server if multiplayer is enabled
+            if (signalingClient != null && signalingClient.isConnected()) {
+                signalingClient.sendWebcamToggle(false);
+            }
+
             client.player.sendMessage(Text.literal("§eWebcam disabled"), false);
         }
 
         LOGGER.info("Webcam stopped for local player");
+    }
+
+    /**
+     * Initialize multiplayer streaming
+     */
+    private void initializeMultiplayer() {
+        MinecraftClient client = MinecraftClient.getInstance();
+
+        // Wait for player to join a world
+        new Thread(() -> {
+            // Wait for player to exist
+            while (client.player == null) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+
+            // Initialize on main thread
+            client.execute(() -> {
+                try {
+                    String serverUrl = ModConfig.getSignalingServerUrl();
+                    String roomId = ModConfig.getRoomId();
+
+                    LOGGER.info("Connecting to signaling server at {} (room: {})", serverUrl, roomId);
+
+                    signalingClient = new SignalingClient(
+                        serverUrl,
+                        client.player.getUuid(),
+                        client.player.getName().getString(),
+                        roomId
+                    );
+
+                    // Setup callbacks
+                    setupSignalingCallbacks();
+
+                    // Create video stream client
+                    videoStreamClient = new VideoStreamClient(signalingClient);
+                    setupVideoStreamCallbacks();
+
+                    // Connect to server
+                    signalingClient.connect();
+
+                    LOGGER.info("Multiplayer streaming initialized");
+                } catch (Exception e) {
+                    LOGGER.error("Failed to initialize multiplayer streaming", e);
+                }
+            });
+        }, "MultiplayerInit").start();
+    }
+
+    /**
+     * Setup signaling client callbacks
+     */
+    private void setupSignalingCallbacks() {
+        MinecraftClient client = MinecraftClient.getInstance();
+
+        signalingClient.setOnPlayerJoined((event) -> {
+            LOGGER.info("Joined room with {} existing players", event.existingPlayers.length);
+        });
+
+        signalingClient.setOnNewPlayer((player) -> {
+            LOGGER.info("Player joined: {} ({})", player.playerName, player.minecraftUUID);
+        });
+
+        signalingClient.setOnPlayerLeft((uuid) -> {
+            LOGGER.info("Player left: {}", uuid);
+            // Clean up their skin overlay
+            try {
+                java.util.UUID playerUUID = java.util.UUID.fromString(uuid);
+                client.execute(() -> {
+                    SkinOverlayRenderer.cleanupModifiedSkin(playerUUID);
+                });
+            } catch (Exception e) {
+                LOGGER.error("Error cleaning up player skin", e);
+            }
+        });
+
+        signalingClient.setOnWebcamStatus((event) -> {
+            LOGGER.info("Player {} webcam: {}", event.playerName, event.active ? "ON" : "OFF");
+        });
+    }
+
+    /**
+     * Setup video stream client callbacks
+     */
+    private void setupVideoStreamCallbacks() {
+        MinecraftClient client = MinecraftClient.getInstance();
+
+        videoStreamClient.setOnFrameReceived((playerUUID, frame) -> {
+            // Update received player's skin overlay on main thread
+            client.execute(() -> {
+                try {
+                    // Initialize skin for this player if not already done
+                    if (!SkinOverlayRenderer.hasModifiedSkin(playerUUID)) {
+                        // Find the player entity
+                        if (client.world != null) {
+                            for (var player : client.world.getPlayers()) {
+                                if (player.getUuid().equals(playerUUID) && player instanceof AbstractClientPlayerEntity) {
+                                    SkinOverlayRenderer.initializeModifiedSkin((AbstractClientPlayerEntity) player);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Update the skin with the received frame
+                    SkinOverlayRenderer.updateSkinWithWebcam(playerUUID, frame);
+                } catch (Exception e) {
+                    LOGGER.error("Error updating remote player skin", e);
+                }
+            });
+        });
+    }
+
+    // Public methods for commands
+    public boolean isWebcamActive() {
+        return webcamActive;
+    }
+
+    public boolean isSignalingConnected() {
+        return signalingClient != null && signalingClient.isConnected();
+    }
+
+    public VideoStreamClient.VideoStats getStreamingStats() {
+        return videoStreamClient != null ? videoStreamClient.getStats() : null;
+    }
+
+    public void reconnectSignaling() {
+        // Disconnect current signaling client
+        if (signalingClient != null) {
+            signalingClient.disconnect();
+        }
+
+        // Reinitialize multiplayer
+        if (ModConfig.isMultiplayerEnabled()) {
+            initializeMultiplayer();
+        }
     }
 }

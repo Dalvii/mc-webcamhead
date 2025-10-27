@@ -21,11 +21,6 @@ export class SignalingManager {
         // Webcam toggle
         socket.on('webcam:toggle', (data) => this.handleWebcamToggle(socket, data));
 
-        // WebRTC signaling (kept for future use)
-        socket.on('webrtc:offer', (data) => this.handleOffer(socket, data));
-        socket.on('webrtc:answer', (data) => this.handleAnswer(socket, data));
-        socket.on('webrtc:ice-candidate', (data) => this.handleIceCandidate(socket, data));
-
         // Video streaming
         socket.on('video:frame', (data) => this.handleVideoFrame(socket, data));
     }
@@ -121,74 +116,6 @@ export class SignalingManager {
     }
 
     /**
-     * Handle WebRTC offer
-     */
-    handleOffer(socket, data) {
-        const { targetUUID, offer } = data;
-        const fromPlayer = this.playerManager.getPlayer(socket.id);
-        const toPlayer = this.playerManager.getPlayerByUUID(targetUUID);
-
-        if (!fromPlayer || !toPlayer) {
-            console.error('[Signaling] Invalid offer: player not found');
-            return;
-        }
-
-        // Forward offer to target player
-        this.io.to(toPlayer.socketId).emit('webrtc:offer', {
-            fromUUID: fromPlayer.minecraftUUID,
-            fromName: fromPlayer.playerName,
-            offer
-        });
-
-        console.log(`[Signaling] Forwarded offer from ${fromPlayer.playerName} to ${toPlayer.playerName}`);
-    }
-
-    /**
-     * Handle WebRTC answer
-     */
-    handleAnswer(socket, data) {
-        const { targetUUID, answer } = data;
-        const fromPlayer = this.playerManager.getPlayer(socket.id);
-        const toPlayer = this.playerManager.getPlayerByUUID(targetUUID);
-
-        if (!fromPlayer || !toPlayer) {
-            console.error('[Signaling] Invalid answer: player not found');
-            return;
-        }
-
-        // Forward answer to target player
-        this.io.to(toPlayer.socketId).emit('webrtc:answer', {
-            fromUUID: fromPlayer.minecraftUUID,
-            fromName: fromPlayer.playerName,
-            answer
-        });
-
-        console.log(`[Signaling] Forwarded answer from ${fromPlayer.playerName} to ${toPlayer.playerName}`);
-    }
-
-    /**
-     * Handle ICE candidate
-     */
-    handleIceCandidate(socket, data) {
-        const { targetUUID, candidate } = data;
-        const fromPlayer = this.playerManager.getPlayer(socket.id);
-        const toPlayer = this.playerManager.getPlayerByUUID(targetUUID);
-
-        if (!fromPlayer || !toPlayer) {
-            console.error('[Signaling] Invalid ICE candidate: player not found');
-            return;
-        }
-
-        // Forward ICE candidate to target player
-        this.io.to(toPlayer.socketId).emit('webrtc:ice-candidate', {
-            fromUUID: fromPlayer.minecraftUUID,
-            candidate
-        });
-
-        console.log(`[Signaling] Forwarded ICE candidate from ${fromPlayer.playerName} to ${toPlayer.playerName}`);
-    }
-
-    /**
      * Handle video frame
      */
     handleVideoFrame(socket, data) {
@@ -202,12 +129,23 @@ export class SignalingManager {
 
         const roomId = this.roomManager.getRoomForPlayer(socket.id);
         if (roomId) {
+            const playersInRoom = this.roomManager.getPlayersInRoom(roomId).length;
+
             // Broadcast frame to all other players in the room
             socket.to(roomId).emit('video:frame', {
                 fromUUID: fromPlayer.minecraftUUID,
                 fromName: fromPlayer.playerName,
                 frameData: frameData
             });
+
+            // Log occasionally (every 100 frames)
+            if (!this.frameCount) this.frameCount = {};
+            if (!this.frameCount[fromPlayer.minecraftUUID]) this.frameCount[fromPlayer.minecraftUUID] = 0;
+            this.frameCount[fromPlayer.minecraftUUID]++;
+
+            if (this.frameCount[fromPlayer.minecraftUUID] % 100 === 0) {
+                console.log(`[Signaling] Forwarded ${this.frameCount[fromPlayer.minecraftUUID]} frames from ${fromPlayer.playerName} to ${playersInRoom - 1} player(s)`);
+            }
         }
     }
 }

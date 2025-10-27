@@ -1,14 +1,14 @@
 {
-  "name": "webcamhead-signaling-server",
+  "name": "webcamhead-streaming-server",
   "version": "1.0.0",
-  "description": "WebRTC signaling server for WebcamHead Minecraft mod",
+  "description": "Video streaming relay server for WebcamHead Minecraft mod",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["webrtc", "signaling", "minecraft", "websocket"],
+  "keywords": ["video", "streaming", "minecraft", "websocket", "socketio"],
   "author": "",
   "license": "MIT",
   "dependencies": {
