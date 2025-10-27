@@ -52,6 +52,8 @@ public class WebcamheadClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
 
         // Register render event for rendering video panels
+        // DISABLED: We're using skin overlay mode instead of 3D panels
+        /*
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.LAST.register(context -> {
             if (context.world() == null) return;
 
@@ -89,6 +91,7 @@ public class WebcamheadClient implements ClientModInitializer {
                 }
             }
         });
+        */
 
         LOGGER.info("WebcamHead mod initialized");
     }
