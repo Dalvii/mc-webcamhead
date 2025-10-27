@@ -21,20 +21,31 @@ import java.util.UUID;
 public class SkinOverlayRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger("WebcamHead");
 
-    // High resolution skin (128x128 texture instead of standard 64x64)
-    // This gives us 2x resolution for the face
-    private static final int SKIN_RESOLUTION = 128;
+    // High resolution skin to support 128x128 webcam on the entire head
+    // Head cube is 32x32 in standard 64x64 skin (8 wide x 8 tall x 4 sides = 32x32 unfolded)
+    // To get 128x128 for the head, we need 128/8 = 16x scale, so 64 * 16 = 1024x1024 skin
+    private static final int SKIN_RESOLUTION = 1024;
+    private static final int SCALE = SKIN_RESOLUTION / 64; // 16x scale
 
-    // Front face coordinates (scaled 2x from standard)
-    // Standard face is at (8,8) with size 8x8, so 2x is (16,16) with size 16x16
-    private static final int FACE_X = 16;
-    private static final int FACE_Y = 16;
-    private static final int FACE_WIDTH = 16;
-    private static final int FACE_HEIGHT = 16;
+    // Head region in standard skin starts at (0,0) and is 32x16 (all sides + top/bottom)
+    // We'll use this entire area to map a 128x128 webcam image
+    // The head region contains: right, front, left, back (each 8x8), top and bottom (each 8x8)
 
-    // Overlay face (second layer): scaled 2x from (40,8)
-    private static final int OVERLAY_FACE_X = 80;
-    private static final int OVERLAY_FACE_Y = 16;
+    // Front face coordinates (scaled 16x from standard)
+    private static final int HEAD_REGION_X = 0;
+    private static final int HEAD_REGION_Y = 0;
+    private static final int HEAD_REGION_WIDTH = 32 * SCALE;  // 512 pixels
+    private static final int HEAD_REGION_HEIGHT = 16 * SCALE; // 256 pixels
+
+    // We'll map the 128x128 webcam to cover the front face primarily
+    private static final int FACE_X = 8 * SCALE;      // 128
+    private static final int FACE_Y = 8 * SCALE;      // 128
+    private static final int FACE_WIDTH = 8 * SCALE;  // 128
+    private static final int FACE_HEIGHT = 8 * SCALE; // 128
+
+    // Overlay face (second layer)
+    private static final int OVERLAY_FACE_X = 40 * SCALE; // 640
+    private static final int OVERLAY_FACE_Y = 8 * SCALE;  // 128
 
     // Cache of modified skin textures
     private static final Map<UUID, ModifiedSkinData> modifiedSkins = new HashMap<>();
@@ -69,25 +80,22 @@ public class SkinOverlayRenderer {
                 return;
             }
 
-            // Create a high-resolution skin (128x128) by upscaling the original
+            // Create a high-resolution skin (1024x1024) by upscaling the original
             NativeImage modifiedSkin = new NativeImage(SKIN_RESOLUTION, SKIN_RESOLUTION, true);
 
-            // Upscale the original skin to 2x resolution by copying each pixel as a 2x2 block
-            // Since NativeImage doesn't have public getPixel methods, we'll use fillRect
-            // to write and rely on the existing pixel reading in the update method
+            // Upscale the original skin to 16x resolution by copying each pixel as a 16x16 block
             int originalWidth = originalSkin.getWidth();
             int originalHeight = originalSkin.getHeight();
 
-            // First, copy the original at 2x scale using copyRect for each row/column
+            // Copy the original at 16x scale using copyRect for each pixel
             for (int y = 0; y < originalHeight; y++) {
                 for (int x = 0; x < originalWidth; x++) {
-                    // Copy a 1x1 rect from original to a 2x2 location
-                    // We'll need to do this pixel by pixel using a workaround
-                    // Copy the 1x1 pixel 4 times (2x2 block)
-                    originalSkin.copyRect(modifiedSkin, x, y, x * 2, y * 2, 1, 1, false, false);
-                    originalSkin.copyRect(modifiedSkin, x, y, x * 2 + 1, y * 2, 1, 1, false, false);
-                    originalSkin.copyRect(modifiedSkin, x, y, x * 2, y * 2 + 1, 1, 1, false, false);
-                    originalSkin.copyRect(modifiedSkin, x, y, x * 2 + 1, y * 2 + 1, 1, 1, false, false);
+                    // Copy this 1x1 pixel to a 16x16 block (256 times)
+                    for (int dy = 0; dy < SCALE; dy++) {
+                        for (int dx = 0; dx < SCALE; dx++) {
+                            originalSkin.copyRect(modifiedSkin, x, y, x * SCALE + dx, y * SCALE + dy, 1, 1, false, false);
+                        }
+                    }
                 }
             }
 
@@ -157,17 +165,18 @@ public class SkinOverlayRenderer {
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                int rgb = webcamFrame.getRGB(x, y);
+                int argb = webcamFrame.getRGB(x, y);
 
-                int a = (rgb >> 24) & 0xFF;
-                int r = (rgb >> 16) & 0xFF;
-                int g = (rgb >> 8) & 0xFF;
-                int b = rgb & 0xFF;
+                int a = (argb >> 24) & 0xFF;
+                int r = (argb >> 16) & 0xFF;
+                int g = (argb >> 8) & 0xFF;
+                int b = argb & 0xFF;
 
                 if (a == 0) a = 255;
 
-                int abgr = (a << 24) | (b << 16) | (g << 8) | r;
-                skinImage.fillRect(startX + x, startY + y, 1, 1, abgr);
+                // Try ARGB format instead (keep R and B in original positions)
+                int color = (a << 24) | (r << 16) | (g << 8) | b;
+                skinImage.fillRect(startX + x, startY + y, 1, 1, color);
             }
         }
     }
