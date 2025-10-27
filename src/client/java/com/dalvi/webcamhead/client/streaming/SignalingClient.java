@@ -31,6 +31,7 @@ public class SignalingClient {
     private Consumer<String> onPlayerLeft;
     private Consumer<WebcamStatusEvent> onWebcamStatus;
     private Consumer<VideoFrameEvent> onVideoFrame;
+    private Consumer<String> onChatMessage; // Chat message callback
 
     public SignalingClient(String serverUrl, UUID playerUUID, String playerName, String roomId) {
         this.serverUrl = serverUrl;
@@ -48,7 +49,11 @@ public class SignalingClient {
             options.reconnection = true;
             options.reconnectionDelay = 1000;
             options.reconnectionDelayMax = 5000;
-            options.timeout = 10000;
+            options.timeout = 20000;
+            options.forceNew = true;
+
+            // Set transports to try websocket first, then polling
+            options.transports = new String[]{"websocket", "polling"};
 
             socket = IO.socket(URI.create(serverUrl), options);
 
@@ -57,8 +62,10 @@ public class SignalingClient {
             socket.connect();
 
             LOGGER.info("Connecting to signaling server at {}", serverUrl);
+            sendChatMessage("§eConnecting to streaming server...");
         } catch (Exception e) {
             LOGGER.error("Failed to connect to signaling server", e);
+            sendChatMessage("§cFailed to connect: " + e.getMessage());
         }
     }
 
@@ -70,6 +77,7 @@ public class SignalingClient {
             @Override
             public void call(Object... args) {
                 LOGGER.info("Connected to signaling server");
+                sendChatMessage("§aConnected to streaming server");
                 joinRoom();
             }
         });
@@ -78,13 +86,16 @@ public class SignalingClient {
             @Override
             public void call(Object... args) {
                 LOGGER.warn("Disconnected from signaling server");
+                sendChatMessage("§cDisconnected from streaming server");
             }
         });
 
         socket.on(Socket.EVENT_CONNECT_ERROR, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                LOGGER.error("Connection error: {}", args.length > 0 ? args[0] : "Unknown");
+                String error = args.length > 0 ? args[0].toString() : "Unknown";
+                LOGGER.error("Connection error: {}", error);
+                sendChatMessage("§cStreaming connection error: " + error);
             }
         });
 
@@ -177,9 +188,12 @@ public class SignalingClient {
         if (args.length > 0 && onPlayerJoined != null) {
             try {
                 PlayerJoinedEvent event = gson.fromJson(args[0].toString(), PlayerJoinedEvent.class);
+                int count = event.existingPlayers != null ? event.existingPlayers.length : 0;
+                sendChatMessage("§eJoined room §f" + roomId + " §e(" + count + " players already connected)");
                 onPlayerJoined.accept(event);
             } catch (Exception e) {
                 LOGGER.error("Error parsing player:joined event", e);
+                sendChatMessage("§cError joining room");
             }
         }
     }
@@ -189,6 +203,7 @@ public class SignalingClient {
             try {
                 JsonObject json = gson.fromJson(args[0].toString(), JsonObject.class);
                 PlayerInfo player = gson.fromJson(json.get("player"), PlayerInfo.class);
+                sendChatMessage("§a+ §f" + player.playerName + " §ajoined the stream");
                 onNewPlayer.accept(player);
             } catch (Exception e) {
                 LOGGER.error("Error parsing player:new event", e);
@@ -201,6 +216,8 @@ public class SignalingClient {
             try {
                 JsonObject json = gson.fromJson(args[0].toString(), JsonObject.class);
                 String uuid = json.get("minecraftUUID").getAsString();
+                String playerName = json.has("playerName") ? json.get("playerName").getAsString() : "Unknown";
+                sendChatMessage("§c- §f" + playerName + " §cleft the stream");
                 onPlayerLeft.accept(uuid);
             } catch (Exception e) {
                 LOGGER.error("Error parsing player:left event", e);
@@ -246,6 +263,15 @@ public class SignalingClient {
         return socket != null && socket.connected();
     }
 
+    /**
+     * Send a message to chat (via callback)
+     */
+    private void sendChatMessage(String message) {
+        if (onChatMessage != null) {
+            onChatMessage.accept(message);
+        }
+    }
+
     // Setters for callbacks
     public void setOnPlayerJoined(Consumer<PlayerJoinedEvent> callback) {
         this.onPlayerJoined = callback;
@@ -265,6 +291,10 @@ public class SignalingClient {
 
     public void setOnVideoFrame(Consumer<VideoFrameEvent> callback) {
         this.onVideoFrame = callback;
+    }
+
+    public void setOnChatMessage(Consumer<String> callback) {
+        this.onChatMessage = callback;
     }
 
     // Event classes

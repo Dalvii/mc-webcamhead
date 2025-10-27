@@ -18,12 +18,35 @@ npm install
 npm start
 ```
 
+Le serveur démarre sur le port **3000** par défaut et sert :
+- **WebSocket** : `ws://localhost:3000`
+- **API REST** : `http://localhost:3000/api`
+- **Web Viewer** : `http://localhost:3000/viewer`
+
 ### Développement (avec auto-reload)
 ```bash
 npm run dev
 ```
 
-Le serveur démarre sur le port **3000** par défaut.
+### Première utilisation
+
+1. **Compiler le web viewer** (interface web React)
+   ```bash
+   cd ../webcam-viewer
+   npm install
+   npm run build
+   ```
+   Les fichiers compilés seront automatiquement placés dans `streaming-server/public/viewer/`
+
+2. **Démarrer le serveur**
+   ```bash
+   cd ../streaming-server
+   npm install
+   npm start
+   ```
+
+3. **Accéder au viewer**
+   Ouvrez votre navigateur sur `http://localhost:3000/viewer`
 
 ## API REST
 
@@ -105,8 +128,29 @@ src/
   player-manager.js    # Gestion des joueurs connectés
   room-manager.js      # Gestion des rooms de streaming
   signaling.js         # Logique de relais vidéo et événements Socket.IO
-public/                # Interface web (à venir)
+public/
+  viewer/              # Interface web React (compilée depuis ../webcam-viewer)
 ```
+
+## Web Viewer
+
+Le Web Viewer est une interface React permettant de visualiser en temps réel tous les webcams des joueurs connectés.
+
+### Fonctionnalités
+- **Grille de joueurs** : Affichage en grille responsive de tous les joueurs avec webcam active
+- **Sélection de room** : Dropdown pour changer de room en direct
+- **Statistiques** : FPS, bande passante, nombre de joueurs
+- **Mode plein écran** : Clic sur un joueur pour voir sa webcam en grand
+- **Reconnexion automatique** : Se reconnecte automatiquement en cas de déconnexion
+
+### Développement du viewer
+```bash
+cd ../webcam-viewer
+npm install
+npm run dev  # Démarre sur http://localhost:5173
+```
+
+Le mode développement utilise des proxies pour communiquer avec le serveur sur le port 3000.
 
 ## Performance
 

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
-const SERVER_URL = 'http://localhost:3000';
+// Use same origin when deployed, localhost:3000 for development
+const SERVER_URL = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
 
 export function useStreamingClient(roomId = 'default') {
   const [players, setPlayers] = useState({});

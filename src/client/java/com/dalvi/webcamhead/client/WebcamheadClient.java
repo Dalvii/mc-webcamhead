@@ -161,6 +161,18 @@ public class WebcamheadClient implements ClientModInitializer {
     }
 
     private void startWebcam(MinecraftClient client) {
+        // Check if server is configured for multiplayer
+        if (ModConfig.isMultiplayerEnabled() && !ModConfig.isServerConfigured()) {
+            if (client.player != null) {
+                client.player.sendMessage(Text.literal("§c=== Signaling Server Not Configured ==="), false);
+                client.player.sendMessage(Text.literal("§eBefore using multiplayer webcam, you must configure the server:"), false);
+                client.player.sendMessage(Text.literal("§f/webcam server <url>"), false);
+                client.player.sendMessage(Text.literal("§7Example: /webcam server http://localhost:3000"), false);
+            }
+            webcamActive = false;
+            return;
+        }
+
         if (client.player != null) {
             client.player.sendMessage(Text.literal("§eStarting webcam..."), false);
         }
@@ -266,6 +278,12 @@ public class WebcamheadClient implements ClientModInitializer {
      * Initialize multiplayer streaming
      */
     private void initializeMultiplayer() {
+        // Check if server is configured
+        if (!ModConfig.isServerConfigured()) {
+            LOGGER.warn("Signaling server not configured, skipping multiplayer initialization");
+            return;
+        }
+
         MinecraftClient client = MinecraftClient.getInstance();
 
         // Wait for player to join a world
@@ -317,6 +335,15 @@ public class WebcamheadClient implements ClientModInitializer {
      */
     private void setupSignalingCallbacks() {
         MinecraftClient client = MinecraftClient.getInstance();
+
+        // Setup chat message callback
+        signalingClient.setOnChatMessage((message) -> {
+            client.execute(() -> {
+                if (client.player != null) {
+                    client.player.sendMessage(Text.literal(message), false);
+                }
+            });
+        });
 
         signalingClient.setOnPlayerJoined((event) -> {
             LOGGER.info("Joined room with {} existing players", event.existingPlayers.length);
@@ -393,10 +420,14 @@ public class WebcamheadClient implements ClientModInitializer {
         // Disconnect current signaling client
         if (signalingClient != null) {
             signalingClient.disconnect();
+            signalingClient = null;
         }
 
+        // Reset video stream client
+        videoStreamClient = null;
+
         // Reinitialize multiplayer
-        if (ModConfig.isMultiplayerEnabled()) {
+        if (ModConfig.isMultiplayerEnabled() && ModConfig.isServerConfigured()) {
             initializeMultiplayer();
         }
     }

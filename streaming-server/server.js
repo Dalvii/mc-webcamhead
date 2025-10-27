@@ -2,9 +2,14 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PlayerManager } from './src/player-manager.js';
 import { RoomManager } from './src/room-manager.js';
 import { SignalingManager } from './src/signaling.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -76,6 +81,15 @@ app.post('/api/join', (req, res) => {
     });
 });
 
+// Serve web viewer on /viewer route
+const viewerPath = path.join(__dirname, 'public', 'viewer');
+app.use('/viewer', express.static(viewerPath));
+
+// SPA fallback for /viewer routes - serve index.html for any unmatched /viewer/* routes
+app.get('/viewer/*', (req, res) => {
+    res.sendFile(path.join(viewerPath, 'index.html'));
+});
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
     console.log(`[Server] New connection: ${socket.id}`);
@@ -98,6 +112,7 @@ httpServer.listen(PORT, () => {
 ║  Port: ${PORT}                                             ║
 ║  WebSocket: ws://localhost:${PORT}                        ║
 ║  API: http://localhost:${PORT}/api                        ║
+║  Web Viewer: http://localhost:${PORT}/viewer              ║
 ╚══════════════════════════════════════════════════════════╝
     `);
 });

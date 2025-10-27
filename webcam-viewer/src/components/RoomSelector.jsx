@@ -13,7 +13,9 @@ export function RoomSelector({ currentRoom, onRoomChange }) {
 
   const fetchRooms = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/rooms');
+      // Use same origin for API in production
+      const apiUrl = import.meta.env.DEV ? 'http://localhost:3000/api/rooms' : '/api/rooms';
+      const response = await fetch(apiUrl);
       const data = await response.json();
       // Extract room IDs from room objects
       const roomIds = (data.rooms || []).map(room => room.id);

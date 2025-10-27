@@ -23,6 +23,9 @@ public class WebcamCommand {
             .then(literal("device")
                 .then(argument("index", IntegerArgumentType.integer(0, 10))
                     .executes(WebcamCommand::setDevice)))
+            .then(literal("server")
+                .then(argument("url", StringArgumentType.string())
+                    .executes(WebcamCommand::setServer)))
             .then(literal("info")
                 .executes(WebcamCommand::showInfo))
             .then(literal("state")
@@ -68,6 +71,43 @@ public class WebcamCommand {
         return 1;
     }
 
+    private static int setServer(CommandContext<FabricClientCommandSource> context) {
+        String url = StringArgumentType.getString(context, "url");
+
+        // Validate URL format
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            context.getSource().sendFeedback(Text.literal("§cInvalid URL format. URL must start with http:// or https://"));
+            context.getSource().sendFeedback(Text.literal("§eExample: /webcam server http://localhost:3000"));
+            return 0;
+        }
+
+        // Remove trailing slash if present
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+
+        ModConfig.setSignalingServerUrl(url);
+        context.getSource().sendFeedback(Text.literal("§aSignaling server URL set to: §f" + url));
+        context.getSource().sendFeedback(Text.literal("§eYou can now start your webcam with the V key"));
+
+        // If already connected, reconnect to the new server
+        WebcamheadClient client = WebcamheadClient.getInstance();
+        if (client != null) {
+            if (client.isSignalingConnected()) {
+                context.getSource().sendFeedback(Text.literal("§eReconnecting to new server..."));
+                client.reconnectSignaling();
+            } else {
+                // Not connected yet, try to connect now if multiplayer is enabled and we're in a world
+                if (ModConfig.isMultiplayerEnabled()) {
+                    context.getSource().sendFeedback(Text.literal("§eConnecting to server..."));
+                    client.reconnectSignaling();
+                }
+            }
+        }
+
+        return 1;
+    }
+
     private static int showInfo(CommandContext<FabricClientCommandSource> context) {
         context.getSource().sendFeedback(Text.literal("§6=== Webcam Configuration ==="));
         context.getSource().sendFeedback(Text.literal("§eDevice Index: §f" + ModConfig.getDeviceIndex()));
@@ -75,7 +115,14 @@ public class WebcamCommand {
         context.getSource().sendFeedback(Text.literal("§eFPS: §f" + ModConfig.getCaptureFps()));
         context.getSource().sendFeedback(Text.literal("§eRender Mode: §f" + ModConfig.getRenderMode()));
         context.getSource().sendFeedback(Text.literal("§eMultiplayer: §f" + (ModConfig.isMultiplayerEnabled() ? "Enabled" : "Disabled")));
-        context.getSource().sendFeedback(Text.literal("§eServer: §f" + ModConfig.getSignalingServerUrl()));
+
+        if (ModConfig.isServerConfigured()) {
+            context.getSource().sendFeedback(Text.literal("§eServer: §a" + ModConfig.getSignalingServerUrl()));
+        } else {
+            context.getSource().sendFeedback(Text.literal("§eServer: §c[Not Configured]"));
+            context.getSource().sendFeedback(Text.literal("§7Use /webcam server <url> to configure"));
+        }
+
         context.getSource().sendFeedback(Text.literal("§eRoom: §f" + ModConfig.getRoomId()));
         return 1;
     }

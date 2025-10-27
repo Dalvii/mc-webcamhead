@@ -5,7 +5,6 @@ public class ModConfig {
     public static final int DEFAULT_HEIGHT = 240;
     public static final int DEFAULT_FPS = 15;
     public static final int DEFAULT_DEVICE_INDEX = 0;
-    public static final String DEFAULT_SIGNALING_SERVER = "http://localhost:3000";
     public static final String DEFAULT_ROOM_ID = "default";
 
     private static int captureWidth = DEFAULT_WIDTH;
@@ -13,7 +12,7 @@ public class ModConfig {
     private static int captureFps = DEFAULT_FPS;
     private static int deviceIndex = DEFAULT_DEVICE_INDEX;
     private static RenderMode renderMode = RenderMode.PANEL_3D;
-    private static String signalingServerUrl = DEFAULT_SIGNALING_SERVER;
+    private static String signalingServerUrl = null; // Not configured by default - user must set it
     private static String roomId = DEFAULT_ROOM_ID;
     private static boolean multiplayerEnabled = true;
 
@@ -85,5 +84,12 @@ public class ModConfig {
 
     public static void setMultiplayerEnabled(boolean enabled) {
         multiplayerEnabled = enabled;
+    }
+
+    /**
+     * Check if the signaling server is configured
+     */
+    public static boolean isServerConfigured() {
+        return signalingServerUrl != null && !signalingServerUrl.isEmpty();
     }
 }
