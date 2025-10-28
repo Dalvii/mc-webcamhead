@@ -32,12 +32,15 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
-      - name: Get mod version from gradle.properties
+      - name: Generate version with build number
         id: get_version
         run: |
-          VERSION=$(grep "^mod_version" gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          BASE_VERSION=$(grep "^mod_version" gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          # Auto-increment version using GitHub run number
+          VERSION="${BASE_VERSION}.${{ github.run_number }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Mod version: $VERSION"
+          echo "Base version: $BASE_VERSION"
+          echo "Auto version: $VERSION"
 
       - name: Check if tag exists
         id: check_tag
