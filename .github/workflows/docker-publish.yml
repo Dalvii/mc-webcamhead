@@ -1,0 +1,114 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'streaming-server/**'
+      - 'webcam-viewer/**'
+      - '.github/workflows/docker-publish.yml'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            webcam-viewer/package-lock.json
+            streaming-server/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./webcam-viewer
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./webcam-viewer
+        run: npm run build
+
+      - name: Verify frontend build
+        run: |
+          if [ ! -f "streaming-server/public/viewer/index.html" ]; then
+            echo "❌ Frontend build failed: index.html not found in streaming-server/public/viewer"
+            exit 1
+          fi
+          if [ ! -d "streaming-server/public/viewer/assets" ]; then
+            echo "❌ Frontend build failed: assets directory not found"
+            exit 1
+          fi
+          echo "✅ Frontend build verified successfully"
+          echo "Files in streaming-server/public/viewer:"
+          ls -la streaming-server/public/viewer/
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./streaming-server/package.json').version")
+          # Add build number for unique versioning
+          FULL_VERSION="${VERSION}.${GITHUB_RUN_NUMBER}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Base version: $VERSION"
+          echo "🏷️  Full version: $FULL_VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/webcamhead-server
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.get_version.outputs.version }}
+            type=raw,value=${{ steps.get_version.outputs.full_version }}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./streaming-server
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/webcamhead-server:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/webcamhead-server:buildcache,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Build Summary
+        run: |
+          echo "## 🐋 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Base Version**: ${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Full Version**: ${{ steps.get_version.outputs.full_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docker Hub**: \`${{ secrets.DOCKERHUB_USERNAME }}/webcamhead-server\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tags Published:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Deploy Command:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ secrets.DOCKERHUB_USERNAME }}/webcamhead-server:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -d -p 3000:3000 ${{ secrets.DOCKERHUB_USERNAME }}/webcamhead-server:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
