@@ -10,7 +10,7 @@
 
 [🎮 Download](#-installation) | [📖 How It Works](#-how-it-works) | [🚀 Quick Start](#-quick-start) | [❓ Troubleshooting](#-troubleshooting)
 
-![WebcamHead Demo](https://via.placeholder.com/800x400/1a1a1a/00ff00?text=WebcamHead+Demo+-+Add+your+screenshot+here)
+![WebcamHead Demo](screenshot1.png)
 
 </div>
 
