@@ -8,14 +8,14 @@ Official Docker image for the WebcamHead video streaming relay server.
 
 ```bash
 # Pull the latest image
-docker pull <dockerhub-username>/webcamhead-server:latest
+docker pull tdqdev/webcamhead-server:latest
 
 # Run the server
 docker run -d \
   --name webcamhead-server \
   -p 3000:3000 \
   --restart unless-stopped \
-  <dockerhub-username>/webcamhead-server:latest
+  tdqdev/webcamhead-server:latest
 ```
 
 ### Using Docker Compose
@@ -63,7 +63,7 @@ docker-compose down
 docker run -d \
   -p 8080:3000 \
   -e PORT=3000 \
-  <dockerhub-username>/webcamhead-server:latest
+  tdqdev/webcamhead-server:latest
 ```
 
 ## Health Check

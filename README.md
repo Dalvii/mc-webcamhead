@@ -1,370 +1,334 @@
-# WebcamHead - Minecraft Webcam Streaming Mod
+# 📹 WebcamHead - Show Your Face in Minecraft!
 
 <div align="center">
 
-**Display your webcam feed on your Minecraft player's face in real-time!**
+**Transform your Minecraft skin into a live webcam feed! See your friends' faces on their in-game characters in real-time.**
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.3-green.svg)](https://www.minecraft.net/)
-[![Fabric](https://img.shields.io/badge/Fabric-0.17.3-orange.svg)](https://fabricmc.net/)
-[![Java](https://img.shields.io/badge/Java-21-blue.svg)](https://adoptium.net/)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Fabric](https://img.shields.io/badge/Fabric-Mod-orange.svg)](https://fabricmc.net/)
+[![Download](https://img.shields.io/badge/Download-Latest-blue.svg)](../../releases)
 
-[English](#english) | [Français](#français)
+[🎮 Download](#-installation) | [📖 How It Works](#-how-it-works) | [🚀 Quick Start](#-quick-start) | [❓ Troubleshooting](#-troubleshooting)
+
+![WebcamHead Demo](https://via.placeholder.com/800x400/1a1a1a/00ff00?text=WebcamHead+Demo+-+Add+your+screenshot+here)
 
 </div>
 
 ---
 
-## English
+## 🎯 What is WebcamHead?
 
-### Overview
+WebcamHead is a Minecraft mod that lets you **stream your webcam directly onto your player's face**. When you're playing with friends, they'll see your real face on your character's head instead of the regular Minecraft skin!
 
-WebcamHead is a Fabric mod for Minecraft 1.21.3 that allows players to stream their webcam feed directly onto their in-game player skin. Other players can see your live webcam feed on your character's face, creating a unique and immersive multiplayer experience.
+### ✨ Features
 
-**Key Features:**
-- **Real-time webcam streaming** on player skins (128x128 resolution)
-- **Multiplayer support** with room-based streaming
-- **Web viewer** to watch all players from a browser
-- **Low bandwidth** (~80 KB/s per player)
-- **Easy setup** with Socket.IO relay server
-- **Auto-disconnect** when leaving worlds
-- **Multiple camera support**
+- 🎥 **Live webcam streaming** - Your face appears on your Minecraft character's head
+- 👥 **Multiplayer ready** - Everyone in the server can see each other's webcams
+- 🌐 **Web viewer** - Watch all players from any browser
+- ⚡ **Low bandwidth** - Only ~80 KB/s per player
+- 🎮 **Simple controls** - Just press **V** to toggle on/off
+- 📹 **Multi-camera support** - Choose between different webcams
+- 🔒 **Privacy-focused** - You control when your webcam is on
 
-### Screenshots
+### 🎬 How It Works
 
-[Add screenshots here]
+1. **You press V** → Your webcam turns on
+2. **Face appears** → Your real face shows up on your Minecraft character's head
+3. **Friends see you** → Everyone on the server sees your live webcam
+4. **Press V again** → Webcam turns off, back to normal skin
 
-### Quick Start
-
-1. **Install the mod** (requires Fabric Loader and Fabric API)
-2. **Start the streaming server:**
-   ```bash
-   cd streaming-server
-   npm install && npm start
-   ```
-3. **Configure in-game:**
-   ```
-   /webcam server http://localhost:3000
-   ```
-4. **Press V** to toggle your webcam
-
-For detailed instructions, see [USER_GUIDE.md](USER_GUIDE.md)
-
-### Project Structure
-
-```
-mc-webcamhead/
-├── src/                          # Minecraft mod source code (Java)
-│   ├── client/                   # Client-side code
-│   │   ├── webcam/              # Webcam capture (JavaCV)
-│   │   ├── streaming/           # Socket.IO client
-│   │   ├── render/              # Skin overlay rendering
-│   │   └── command/             # In-game commands
-│   └── main/                    # Common code
-├── streaming-server/             # Node.js Socket.IO relay server
-│   ├── src/
-│   │   ├── player-manager.js   # Player state management
-│   │   ├── room-manager.js     # Room management
-│   │   └── signaling.js        # Video relay logic
-│   └── public/viewer/          # Compiled web viewer
-├── webcam-viewer/               # React web viewer (source)
-│   └── src/
-│       ├── components/         # React components
-│       └── hooks/              # Socket.IO hook
-└── USER_GUIDE.md               # Complete user guide
-```
-
-### Documentation
-
-- **[USER_GUIDE.md](USER_GUIDE.md)** - Complete installation and usage guide (English + Français)
-- **[CLAUDE.md](CLAUDE.md)** - Development guide for contributors
-- **[STREAMING_IMPLEMENTATION.md](STREAMING_IMPLEMENTATION.md)** - Streaming architecture details
-- **[streaming-server/README.md](streaming-server/README.md)** - Server documentation
-
-### Requirements
-
-#### For Players
-- Minecraft 1.21.3
-- Fabric Loader 0.17.3+
-- Fabric API 0.114.1+1.21.3+
-- Java 21+
-- Any webcam (USB or built-in)
-
-#### For Server Hosts
-- Node.js 18+
-- npm 9+
-- Open port 3000 (or custom port)
-
-### Installation
-
-#### Mod Installation
-1. Download the latest release from the [Releases page](../../releases)
-2. Install Fabric Loader and Fabric API
-3. Copy `webcamhead-X.X.X.jar` to `.minecraft/mods/`
-4. Launch Minecraft
-
-#### macOS Camera Permissions ⚠️
-
-**KNOWN ISSUE:** Due to macOS security restrictions, the camera permission popup does not appear when using the official Minecraft launcher. This is a macOS limitation, not a mod bug.
-
-**Solutions:**
-
-1. **Use Prism Launcher (Recommended for End Users):**
-   - Download: [Prism Launcher](https://prismlauncher.org/)
-   - ✅ **CONFIRMED WORKING** - Properly triggers the camera permission popup
-   - Create a Fabric instance, add the mod, and launch
-   - When you press V, macOS will ask for camera permission
-   - Click "Allow" and the webcam will work perfectly!
-
-2. **Use Development Mode (Recommended for Development):**
-   ```bash
-   ./gradlew runClient  # Works perfectly! ✅
-   ```
-
-3. **Other Alternative Launchers:**
-   - [MultiMC](https://multimc.org/) (may also work)
-
-**Why this happens:** macOS requires applications to be proper .app bundles with Info.plist to request camera access. The official Minecraft launcher's Java runtime doesn't meet this requirement, but Prism Launcher does.
-
-**For more details:** See [MACOS_CAMERA_FIX.md](MACOS_CAMERA_FIX.md)
-
-#### Server Setup
-```bash
-# Install and start the streaming server
-cd streaming-server
-npm install
-npm start
-
-# Build the web viewer (optional)
-cd ../webcam-viewer
-npm install
-npm run build
-```
-
-Server will start on `http://localhost:3000`
-
-### Commands
-
-| Command | Description |
-|---------|-------------|
-| `/webcam server <url>` | Configure streaming server URL |
-| `/webcam info` | Show current configuration |
-| `/webcam list` | List available webcam devices |
-| `/webcam device <index>` | Select a specific camera |
-| `/webcam state` | Show connection state |
-| `/webcam stats` | Display streaming statistics |
-| `/webcam join <roomId>` | Switch to a different room |
-
-**Key binding:** Press **V** to toggle webcam on/off
-
-### Web Viewer
-
-Access the web viewer at `http://YOUR_SERVER:3000/viewer` to see all players' webcams in a grid layout with real-time statistics.
-
-### Building from Source
-
-```bash
-# Build the mod
-./gradlew build
-
-# Run Minecraft client with the mod
-./gradlew runClient
-
-# Build the web viewer
-cd webcam-viewer
-npm install
-npm run build
-```
-
-### Contributing
-
-Contributions are welcome! Please see [CLAUDE.md](CLAUDE.md) for development setup and guidelines.
-
-### Releasing
-
-This project uses automated releases via GitHub Actions. See [VERSION_GUIDE.md](VERSION_GUIDE.md) for details on version management and release process.
-
-### License
-
-[Add your license here]
-
-### Credits
-
-- Built with [Fabric](https://fabricmc.net/)
-- Uses [JavaCV](https://github.com/bytedeco/javacv) for webcam capture
-- Streaming powered by [Socket.IO](https://socket.io/)
-- Web viewer built with [React](https://react.dev/)
+No complicated setup, no technical knowledge required!
 
 ---
 
-## Français
+## 💾 Installation
 
-### Présentation
+### For Players (Client Installation)
 
-WebcamHead est un mod Fabric pour Minecraft 1.21.3 qui permet aux joueurs de diffuser le flux de leur webcam directement sur le skin de leur personnage en jeu. Les autres joueurs peuvent voir votre webcam en direct sur le visage de votre personnage, créant une expérience multijoueur unique et immersive.
+#### Step 1: Download Required Files
 
-**Fonctionnalités principales :**
-- **Streaming webcam en temps réel** sur les skins des joueurs (résolution 128x128)
-- **Support multijoueur** avec streaming par room
-- **Visionneuse web** pour regarder tous les joueurs depuis un navigateur
-- **Faible bande passante** (~80 KB/s par joueur)
-- **Configuration facile** avec serveur relay Socket.IO
-- **Déconnexion automatique** en quittant les mondes
-- **Support multi-caméras**
+1. **Download the WebcamHead mod** from the [Releases page](../../releases)
+2. **Install Fabric Loader**:
+   - Go to [FabricMC](https://fabricmc.net/use/installer/)
+   - Download and run the installer
+   - Select Minecraft 1.21.3 and click Install
+3. **Download Fabric API**: [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api) or [Modrinth](https://modrinth.com/mod/fabric-api)
 
-### Démarrage rapide
+#### Step 2: Install the Mod
 
-1. **Installez le mod** (nécessite Fabric Loader et Fabric API)
-2. **Démarrez le serveur de streaming :**
+1. Open your Minecraft folder:
+   - **Windows**: Press `Win + R`, type `%appdata%\.minecraft`, press Enter
+   - **macOS**: Open Finder, press `Cmd + Shift + G`, type `~/Library/Application Support/minecraft`, press Enter
+   - **Linux**: Navigate to `~/.minecraft`
+
+2. Put the files in the `mods` folder:
+   - `webcamhead-X.X.X.jar` (the mod you downloaded)
+   - `fabric-api-X.X.X.jar` (Fabric API you downloaded)
+
+3. Launch Minecraft with the Fabric profile
+
+#### Step 3: First Launch
+
+1. Start Minecraft
+2. Join a world (singleplayer or multiplayer)
+3. Press **V** on your keyboard
+4. Your webcam should activate! 🎉
+
+> **Note**: On first use, your operating system will ask for camera permissions. Click "Allow" to let Minecraft access your webcam.
+
+### 🍎 macOS Users - Important!
+
+If you're on macOS and the camera permission popup doesn't appear, use **Prism Launcher** instead of the official Minecraft launcher:
+
+1. Download [Prism Launcher](https://prismlauncher.org/) (it's free!)
+2. Create a Fabric instance in Prism Launcher
+3. Add the mod to your instance
+4. Launch the game
+5. Press V → Permission popup will appear → Click Allow ✅
+
+**Why?** macOS has strict security rules. The official Minecraft launcher doesn't meet macOS's requirements for camera access, but Prism Launcher does.
+
+For more details, see [MACOS_CAMERA_FIX.md](MACOS_CAMERA_FIX.md)
+
+---
+
+## 🖥️ Server Setup
+
+Want to stream webcams with friends? You'll need a streaming server!
+
+### Option 1: Docker (Easiest!) 🐳
+
+**Perfect if you want to deploy on a VPS or server:**
+
+```bash
+# Pull and run the server
+docker run -d -p 3000:3000 tdqdev/webcamhead-server:latest
+```
+
+Done! Server is running on `http://your-server-ip:3000`
+
+👉 **For detailed Docker deployment**: See [streaming-server/README.Docker.md](streaming-server/README.Docker.md)
+
+### Option 2: Manual Installation
+
+**For local testing or advanced users:**
+
+1. **Install Node.js**:
+   - Download from [nodejs.org](https://nodejs.org/) (version 18 or newer)
+
+2. **Download and start the server**:
    ```bash
    cd streaming-server
-   npm install && npm start
-   ```
-3. **Configurez en jeu :**
-   ```
-   /webcam server http://localhost:3000
-   ```
-4. **Appuyez sur V** pour activer/désactiver votre webcam
-
-Pour des instructions détaillées, voir [USER_GUIDE.md](USER_GUIDE.md)
-
-### Structure du projet
-
-```
-mc-webcamhead/
-├── src/                          # Code source du mod Minecraft (Java)
-│   ├── client/                   # Code côté client
-│   │   ├── webcam/              # Capture webcam (JavaCV)
-│   │   ├── streaming/           # Client Socket.IO
-│   │   ├── render/              # Rendu overlay skin
-│   │   └── command/             # Commandes en jeu
-│   └── main/                    # Code commun
-├── streaming-server/             # Serveur relay Socket.IO (Node.js)
-│   ├── src/
-│   │   ├── player-manager.js   # Gestion état des joueurs
-│   │   ├── room-manager.js     # Gestion des rooms
-│   │   └── signaling.js        # Logique relay vidéo
-│   └── public/viewer/          # Visionneuse web compilée
-├── webcam-viewer/               # Visionneuse web React (source)
-│   └── src/
-│       ├── components/         # Composants React
-│       └── hooks/              # Hook Socket.IO
-└── USER_GUIDE.md               # Guide utilisateur complet
-```
-
-### Documentation
-
-- **[USER_GUIDE.md](USER_GUIDE.md)** - Guide complet d'installation et d'utilisation (English + Français)
-- **[CLAUDE.md](CLAUDE.md)** - Guide de développement pour contributeurs
-- **[STREAMING_IMPLEMENTATION.md](STREAMING_IMPLEMENTATION.md)** - Détails architecture streaming
-- **[streaming-server/README.md](streaming-server/README.md)** - Documentation serveur
-
-### Prérequis
-
-#### Pour les joueurs
-- Minecraft 1.21.3
-- Fabric Loader 0.17.3+
-- Fabric API 0.114.1+1.21.3+
-- Java 21+
-- N'importe quelle webcam (USB ou intégrée)
-
-#### Pour les hébergeurs de serveur
-- Node.js 18+
-- npm 9+
-- Port 3000 ouvert (ou port personnalisé)
-
-### Installation
-
-#### Installation du mod
-1. Téléchargez la dernière version depuis la [page Releases](../../releases)
-2. Installez Fabric Loader et Fabric API
-3. Copiez `webcamhead-X.X.X.jar` dans `.minecraft/mods/`
-4. Lancez Minecraft
-
-#### Permissions Caméra macOS ⚠️
-
-**PROBLÈME CONNU :** En raison des restrictions de sécurité macOS, le popup de permission caméra n'apparaît pas avec le launcher Minecraft officiel. C'est une limitation macOS, pas un bug du mod.
-
-**Solutions :**
-
-1. **Utiliser Prism Launcher (Recommandé pour Utilisateurs Finaux) :**
-   - Télécharger : [Prism Launcher](https://prismlauncher.org/)
-   - ✅ **CONFIRMÉ FONCTIONNEL** - Déclenche correctement le popup de permission caméra
-   - Créez une instance Fabric, ajoutez le mod, et lancez
-   - Quand vous appuyez sur V, macOS demandera la permission caméra
-   - Cliquez sur "Autoriser" et la webcam fonctionnera parfaitement !
-
-2. **Utiliser le Mode Développement (Recommandé pour Développement) :**
-   ```bash
-   ./gradlew runClient  # Fonctionne parfaitement ! ✅
+   npm install
+   npm start
    ```
 
-3. **Autres Launchers Alternatifs :**
-   - [MultiMC](https://multimc.org/) (peut aussi fonctionner)
+3. **Server is ready!** You'll see:
+   ```
+   ╔══════════════════════════════════════════════════════════╗
+   ║  WebcamHead Video Streaming Server                      ║
+   ║  Status: RUNNING                                         ║
+   ║  Port: 3000                                             ║
+   ║  WebSocket: ws://localhost:3000                         ║
+   ║  API: http://localhost:3000/api                         ║
+   ║  Web Viewer: http://localhost:3000/viewer              ║
+   ╚══════════════════════════════════════════════════════════╝
+   ```
 
-**Pourquoi cela arrive :** macOS exige que les applications soient des bundles .app avec Info.plist pour demander l'accès caméra. Le runtime Java du launcher Minecraft officiel ne répond pas à cette exigence, mais Prism Launcher oui.
+### Connect the Mod to Your Server
 
-**Pour plus de détails :** Voir [MACOS_CAMERA_FIX.md](MACOS_CAMERA_FIX.md)
-
-#### Configuration du serveur
-```bash
-# Installer et démarrer le serveur de streaming
-cd streaming-server
-npm install
-npm start
-
-# Compiler la visionneuse web (optionnel)
-cd ../webcam-viewer
-npm install
-npm run build
+In Minecraft, type this command:
+```
+/webcam server http://YOUR_SERVER_IP:3000
 ```
 
-Le serveur démarre sur `http://localhost:3000`
-
-### Commandes
-
-| Commande | Description |
-|----------|-------------|
-| `/webcam server <url>` | Configurer l'URL du serveur de streaming |
-| `/webcam info` | Afficher la configuration actuelle |
-| `/webcam list` | Lister les webcams disponibles |
-| `/webcam device <index>` | Sélectionner une caméra spécifique |
-| `/webcam state` | Afficher l'état de connexion |
-| `/webcam stats` | Afficher les statistiques de streaming |
-| `/webcam join <roomId>` | Changer de room |
-
-**Raccourci clavier :** Appuyez sur **V** pour activer/désactiver la webcam
-
-### Visionneuse Web
-
-Accédez à la visionneuse web sur `http://VOTRE_SERVEUR:3000/viewer` pour voir toutes les webcams des joueurs en grille avec statistiques temps réel.
-
-### Compiler depuis les sources
-
-```bash
-# Compiler le mod
-./gradlew build
-
-# Lancer le client Minecraft avec le mod
-./gradlew runClient
-
-# Compiler la visionneuse web
-cd webcam-viewer
-npm install
-npm run build
+For local testing, use:
+```
+/webcam server http://localhost:3000
 ```
 
-### Contribuer
+---
 
-Les contributions sont les bienvenues ! Voir [CLAUDE.md](CLAUDE.md) pour la configuration de développement et les directives.
+## 🎮 Quick Start
 
-### Licence
+### First Time Use
 
-[Ajoutez votre licence ici]
+1. **Start Minecraft** with the mod installed
+2. **Join a world** (singleplayer or multiplayer)
+3. **Press V** to toggle your webcam
+4. **Look at yourself** in third person (F5) - you should see your webcam on your face!
 
-### Crédits
+### Playing with Friends
 
-- Construit avec [Fabric](https://fabricmc.net/)
-- Utilise [JavaCV](https://github.com/bytedeco/javacv) pour la capture webcam
-- Streaming propulsé par [Socket.IO](https://socket.io/)
-- Visionneuse web construite avec [React](https://react.dev/)
+1. **Set up a streaming server** (see [Server Setup](#️-server-setup))
+2. **Everyone runs this command** in Minecraft:
+   ```
+   /webcam server http://YOUR_SERVER_IP:3000
+   ```
+3. **Everyone presses V** to turn on their webcams
+4. **See each other's faces** on your characters! 🎉
+
+### Web Viewer
+
+Want to see all webcams at once? Open your browser and go to:
+```
+http://YOUR_SERVER_IP:3000/viewer
+```
+
+You'll see a grid with everyone's webcam feed!
+
+---
+
+## ⌨️ Controls & Commands
+
+### Keyboard Shortcut
+
+- **V** - Toggle webcam on/off
+
+### In-Game Commands
+
+| Command | What it does |
+|---------|-------------|
+| `/webcam server <url>` | Connect to a streaming server |
+| `/webcam info` | Show your current settings |
+| `/webcam list` | See all available cameras on your computer |
+| `/webcam device <number>` | Switch to a different camera (0, 1, 2...) |
+| `/webcam state` | Check connection status |
+| `/webcam stats` | View streaming statistics |
+| `/webcam join <roomId>` | Join a specific room (for organizing groups) |
+
+---
+
+## 💡 How It Works (Simple Explanation)
+
+```
+┌─────────────────┐
+│  Your Webcam    │  ← Captures your face
+└────────┬────────┘
+         │
+         ↓
+┌─────────────────┐
+│  Minecraft Mod  │  ← Puts it on your character
+└────────┬────────┘
+         │
+         ↓
+┌─────────────────┐
+│ Streaming Server│  ← Shares it with friends
+└────────┬────────┘
+         │
+         ↓
+┌─────────────────┐
+│ Friends' Games  │  ← They see your face!
+└─────────────────┘
+```
+
+1. Your webcam captures video
+2. The mod puts it on your Minecraft skin (128x128 pixels on your face)
+3. The streaming server relays the video to other players
+4. Your friends see your live webcam on your character's head!
+
+**Privacy**: The webcam only streams when you press V. Press V again to turn it off instantly.
+
+---
+
+## ❓ Troubleshooting
+
+### Webcam Not Working
+
+**Camera not starting?**
+- ✅ Check camera permissions in your OS settings
+- ✅ Make sure no other app is using the camera (Zoom, Skype, etc.)
+- ✅ Try `/webcam list` to see if your camera is detected
+- ✅ Try a different camera with `/webcam device 1`
+
+**On macOS and permission popup doesn't appear?**
+- Use [Prism Launcher](https://prismlauncher.org/) instead of official Minecraft launcher
+
+### Multiplayer Issues
+
+**Friends can't see your webcam?**
+- ✅ Make sure everyone is connected to the same server: `/webcam info`
+- ✅ Check you're in the same room: `/webcam state`
+- ✅ Verify server is running: Open `http://SERVER_IP:3000/api/health` in browser
+- ✅ Check firewall allows port 3000
+
+**Server won't start?**
+- ✅ Make sure port 3000 is not already in use
+- ✅ Install Node.js 18 or newer
+- ✅ Run `npm install` in the streaming-server folder
+
+### Performance Issues
+
+**Game lagging?**
+- Lower webcam quality in config (defaults to 320x240)
+- Reduce FPS (defaults to 15fps)
+- Check your internet connection
+
+**High bandwidth usage?**
+- Each webcam uses ~80 KB/s upload and download per player
+- With 5 players: ~400 KB/s (still very reasonable!)
+
+---
+
+## 📚 Documentation
+
+**For more details:**
+
+- 📖 **[USER_GUIDE.md](USER_GUIDE.md)** - Complete user guide with advanced features
+- 🐳 **[streaming-server/README.Docker.md](streaming-server/README.Docker.md)** - Docker deployment guide
+- 📡 **[STREAMING_IMPLEMENTATION.md](STREAMING_IMPLEMENTATION.md)** - How streaming works (technical)
+
+---
+
+## 🌐 System Requirements
+
+### Minimum Requirements
+
+- **Minecraft**: 1.21.3
+- **Mod Loader**: Fabric Loader 0.17.3+
+- **Fabric API**: 0.114.1+1.21.3+
+- **Java**: 21 or newer
+- **Webcam**: Any USB or built-in webcam
+- **RAM**: 4GB minimum (standard Minecraft requirements)
+
+### For Server Hosts
+
+- **Node.js**: 18 or newer
+- **Port**: 3000 (or your custom port)
+- **Bandwidth**: ~80 KB/s per player
+
+---
+
+## 🤝 Contributing
+
+Want to help improve WebcamHead? Contributions are welcome!
+
+- Report bugs: [Open an issue](../../issues)
+- Suggest features: [Start a discussion](../../discussions)
+
+---
+
+## 📄 License
+
+[Add your license here - e.g., MIT, GPL-3.0, etc.]
+
+---
+
+## 🙏 Credits
+
+Built with amazing open-source technologies:
+
+- [Fabric](https://fabricmc.net/) - Minecraft modding framework
+- [JavaCV](https://github.com/bytedeco/javacv) - Webcam capture
+- [Socket.IO](https://socket.io/) - Real-time streaming
+- [React](https://react.dev/) - Web viewer interface
+
+---
+
+<div align="center">
+
+**Made with ❤️ by Théo VIDAL**
+
+[⬆ Back to top](#-webcamhead---show-your-face-in-minecraft)
+
+</div>

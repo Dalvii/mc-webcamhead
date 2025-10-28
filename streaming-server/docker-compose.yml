@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   webcamhead-server:
-    image: ${DOCKER_USERNAME:-yourusername}/webcamhead-server:latest
+    image: ${DOCKER_USERNAME:-tdqdev}/webcamhead-server:latest
     container_name: webcamhead-streaming-server
     restart: unless-stopped
     ports:
