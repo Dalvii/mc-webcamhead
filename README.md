@@ -88,8 +88,6 @@ If you're on macOS and the camera permission popup doesn't appear, use **Prism L
 
 **Why?** macOS has strict security rules. The official Minecraft launcher doesn't meet macOS's requirements for camera access, but Prism Launcher does.
 
-For more details, see [MACOS_CAMERA_FIX.md](MACOS_CAMERA_FIX.md)
-
 ---
 
 ## 🖥️ Server Setup
@@ -310,7 +308,7 @@ Want to help improve WebcamHead? Contributions are welcome!
 
 ## 📄 License
 
-[Add your license here - e.g., MIT, GPL-3.0, etc.]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
