@@ -1,5 +1,7 @@
 package com.dalvi.webcamhead.client.render;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.texture.NativeImage;
@@ -21,23 +23,16 @@ import java.util.UUID;
 public class SkinOverlayRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger("WebcamHead");
 
-    // High resolution skin to support 128x128 webcam on the entire head
-    // Head cube is 32x32 in standard 64x64 skin (8 wide x 8 tall x 4 sides = 32x32 unfolded)
-    // To get 128x128 for the head, we need 128/8 = 16x scale, so 64 * 16 = 1024x1024 skin
+    // High resolution skin to support 128x128 webcam on the face
+    // Head face is 8x8 in standard 64x64 skin
+    // To get 128x128 for the face, we need 128/8 = 16x scale, so 64 * 16 = 1024x1024 skin
     private static final int SKIN_RESOLUTION = 1024;
     private static final int SCALE = SKIN_RESOLUTION / 64; // 16x scale
 
-    // Head region in standard skin starts at (0,0) and is 32x16 (all sides + top/bottom)
-    // We'll use this entire area to map a 128x128 webcam image
-    // The head region contains: right, front, left, back (each 8x8), top and bottom (each 8x8)
+    // Standard Minecraft skin face coordinates (scaled 16x)
+    // - Front face: (8, 8) to (16, 16) in standard skin
+    // - Overlay face (second layer): (40, 8) to (48, 16) in standard skin
 
-    // Front face coordinates (scaled 16x from standard)
-    private static final int HEAD_REGION_X = 0;
-    private static final int HEAD_REGION_Y = 0;
-    private static final int HEAD_REGION_WIDTH = 32 * SCALE;  // 512 pixels
-    private static final int HEAD_REGION_HEIGHT = 16 * SCALE; // 256 pixels
-
-    // We'll map the 128x128 webcam to cover the front face primarily
     private static final int FACE_X = 8 * SCALE;      // 128
     private static final int FACE_Y = 8 * SCALE;      // 128
     private static final int FACE_WIDTH = 8 * SCALE;  // 128
@@ -62,6 +57,7 @@ public class SkinOverlayRenderer {
      */
     public static void initializeModifiedSkin(AbstractClientPlayerEntity player) {
         UUID playerId = player.getUuid();
+        String playerName = player.getName().getString();
 
         if (modifiedSkins.containsKey(playerId)) {
             return; // Already initialized
@@ -70,34 +66,51 @@ public class SkinOverlayRenderer {
         try {
             // Get original skin texture ID
             Identifier originalSkinId = player.getSkinTextures().texture();
+            MinecraftClient client = MinecraftClient.getInstance();
+
+            // Check if the skin texture is loaded yet
+            var textureManager = client.getTextureManager();
+            var existingTexture = textureManager.getOrDefault(originalSkinId, null);
+
+            if (existingTexture == null) {
+                LOGGER.debug("Skin texture not loaded yet for player {}, will retry later", player.getName().getString());
+                return; // Texture not loaded yet, will try again next frame
+            }
 
             // Load the original skin texture
-            MinecraftClient client = MinecraftClient.getInstance();
-            NativeImage originalSkin = loadSkinTexture(client, originalSkinId);
+            NativeImage originalSkin = loadSkinTexture(client, originalSkinId, playerId, playerName);
 
             if (originalSkin == null) {
                 LOGGER.error("Failed to load original skin texture for player {}", player.getName().getString());
                 return;
             }
 
-            // Create a high-resolution skin (1024x1024) by upscaling the original
-            NativeImage modifiedSkin = new NativeImage(SKIN_RESOLUTION, SKIN_RESOLUTION, true);
+            LOGGER.info("Loaded original skin: {}x{} for player {}",
+                originalSkin.getWidth(), originalSkin.getHeight(), player.getName().getString());
 
-            // Upscale the original skin to 16x resolution by copying each pixel as a 16x16 block
-            int originalWidth = originalSkin.getWidth();
-            int originalHeight = originalSkin.getHeight();
+            // Convert NativeImage to BufferedImage for easier manipulation
+            BufferedImage originalBuffered = nativeImageToBufferedImage(originalSkin);
 
-            // Copy the original at 16x scale using copyRect for each pixel
-            for (int y = 0; y < originalHeight; y++) {
-                for (int x = 0; x < originalWidth; x++) {
-                    // Copy this 1x1 pixel to a 16x16 block (256 times)
-                    for (int dy = 0; dy < SCALE; dy++) {
-                        for (int dx = 0; dx < SCALE; dx++) {
-                            originalSkin.copyRect(modifiedSkin, x, y, x * SCALE + dx, y * SCALE + dy, 1, 1, false, false);
-                        }
-                    }
-                }
+            if (originalBuffered == null) {
+                LOGGER.error("Failed to convert NativeImage to BufferedImage for player {}", player.getName().getString());
+                return;
             }
+
+            LOGGER.info("Converted to BufferedImage: {}x{}",
+                originalBuffered.getWidth(), originalBuffered.getHeight());
+
+            // Upscale the skin from 64x64 to 1024x1024 using Java AWT
+            BufferedImage upscaledBuffered = resizeForSkin(originalBuffered, SKIN_RESOLUTION, SKIN_RESOLUTION);
+
+            LOGGER.info("Upscaled to: {}x{}",
+                upscaledBuffered.getWidth(), upscaledBuffered.getHeight());
+
+            // Convert back to NativeImage
+            NativeImage modifiedSkin = bufferedImageToNativeImage(upscaledBuffered);
+
+            LOGGER.info("Successfully created modified skin ({}x{}) for player {}",
+                SKIN_RESOLUTION, SKIN_RESOLUTION,
+                player.getName().getString());
 
             // Create texture from modified image
             NativeImageBackedTexture texture = new NativeImageBackedTexture(modifiedSkin);
@@ -212,32 +225,238 @@ public class SkinOverlayRenderer {
 
     /**
      * Resize and prepare webcam frame for skin overlay
+     * Uses nearest neighbor for skin upscaling to preserve pixelated look
      */
     private static BufferedImage resizeForSkin(BufferedImage source, int width, int height) {
         BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = resized.createGraphics();
-        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        // Use nearest neighbor for skin upscaling to keep pixel art sharp
+        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         g.drawImage(source, 0, 0, width, height, null);
         g.dispose();
         return resized;
     }
 
     /**
+     * Convert NativeImage to BufferedImage
+     * Since we can't directly access NativeImage pixels, we write to a temporary file and read back
+     */
+    private static BufferedImage nativeImageToBufferedImage(NativeImage nativeImage) {
+        try {
+            // Create a temporary file
+            java.io.File tempFile = java.io.File.createTempFile("skin_", ".png");
+            tempFile.deleteOnExit();
+
+            // Write NativeImage to PNG file
+            nativeImage.writeTo(tempFile.toPath());
+
+            // Read back as BufferedImage
+            BufferedImage buffered = javax.imageio.ImageIO.read(tempFile);
+
+            // Delete temp file
+            tempFile.delete();
+
+            return buffered;
+        } catch (Exception e) {
+            LOGGER.error("Error converting NativeImage to BufferedImage", e);
+            // Return empty image as fallback
+            return new BufferedImage(nativeImage.getWidth(), nativeImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        }
+    }
+
+    /**
+     * Convert BufferedImage to NativeImage
+     */
+    private static NativeImage bufferedImageToNativeImage(BufferedImage buffered) {
+        int width = buffered.getWidth();
+        int height = buffered.getHeight();
+        NativeImage nativeImage = new NativeImage(width, height, true);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int argb = buffered.getRGB(x, y);
+
+                // BufferedImage.getRGB returns ARGB
+                // NativeImage.fillRect expects ARGB
+                // Just copy the color as-is, preserving transparency
+                nativeImage.fillRect(x, y, 1, 1, argb);
+            }
+        }
+
+        return nativeImage;
+    }
+
+    /**
      * Load skin texture from Minecraft's texture manager
      */
-    private static NativeImage loadSkinTexture(MinecraftClient client, Identifier skinId) {
+    private static NativeImage loadSkinTexture(MinecraftClient client, Identifier skinId, UUID playerId, String playerName) {
         try {
-            // Try to get the texture from the resource manager
-            InputStream stream = client.getResourceManager().getResource(skinId)
-                .orElseThrow()
-                .getInputStream();
+            // First, try to get the texture from the resource manager (for default skins)
+            try {
+                InputStream stream = client.getResourceManager().getResource(skinId)
+                    .orElseThrow()
+                    .getInputStream();
+                NativeImage img = NativeImage.read(stream);
+                LOGGER.info("Loaded skin from resources: {}x{}", img.getWidth(), img.getHeight());
+                return img;
+            } catch (Exception e) {
+                LOGGER.debug("Could not load skin from resources: {}", e.getMessage());
+            }
 
-            return NativeImage.read(stream);
+            // For player skins (downloaded from Mojang), we need to get the texture from the texture manager
+            // The texture is already loaded by Minecraft, we just need to read it
+            var textureManager = client.getTextureManager();
+            var texture = textureManager.getOrDefault(skinId, null);
+
+            if (texture == null) {
+                LOGGER.warn("Texture not found in TextureManager for ID: {}", skinId);
+                return createDefaultSkin();
+            }
+
+            LOGGER.info("Found texture of type: {}", texture.getClass().getName());
+
+            // Try to extract NativeImage from the texture
+            if (texture instanceof NativeImageBackedTexture nativeTexture) {
+                NativeImage originalImage = nativeTexture.getImage();
+                if (originalImage != null) {
+                    // Create a copy of the image so we don't modify the original
+                    NativeImage copy = new NativeImage(originalImage.getWidth(), originalImage.getHeight(), true);
+                    originalImage.copyRect(copy, 0, 0, 0, 0, originalImage.getWidth(), originalImage.getHeight(), false, false);
+                    LOGGER.info("Successfully loaded NativeImageBackedTexture: {}x{}", copy.getWidth(), copy.getHeight());
+                    return copy;
+                }
+            }
+
+            // For other texture types (like PlayerSkinTexture), we need to download from Mojang using UUID
+            LOGGER.info("Attempting to download skin from Mojang API for texture type: {}", texture.getClass().getName());
+            return downloadSkinFromMojangAPI(playerId, playerName);
         } catch (Exception e) {
-            LOGGER.debug("Could not load skin from resources, trying default: {}", e.getMessage());
+            LOGGER.error("Error loading skin texture", e);
+            return createDefaultSkin();
+        }
+    }
 
-            // If that fails, create a default 64x64 skin
-            return new NativeImage(64, 64, true);
+    private static NativeImage createDefaultSkin() {
+        LOGGER.warn("Creating default skin (64x64)");
+        NativeImage defaultSkin = new NativeImage(64, 64, true);
+        // Fill with a skin color so we can see something
+        defaultSkin.fillRect(0, 0, 64, 64, 0xFF8B7355); // Skin color in ABGR format
+        return defaultSkin;
+    }
+
+    /**
+     * Download skin texture from Mojang API using player UUID
+     * Step 1: Get profile from https://sessionserver.mojang.com/session/minecraft/profile/<UUID>
+     * Step 2: Decode base64 textures property to get skin URL
+     * Step 3: Download skin from URL
+     */
+    private static NativeImage downloadSkinFromMojangAPI(UUID playerId, String playerName) {
+        try {
+            // Step 1: Get player profile
+            String profileUrl = "https://sessionserver.mojang.com/session/minecraft/profile/" + playerId.toString().replace("-", "");
+            LOGGER.info("Fetching player profile from: {}", profileUrl);
+
+            java.net.URL url = new java.net.URL(profileUrl);
+            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode != 200) {
+                LOGGER.warn("Failed to fetch profile, HTTP {}", responseCode);
+                return createDefaultSkin();
+            }
+
+            // Read JSON response
+            String jsonResponse;
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(connection.getInputStream()))) {
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                jsonResponse = response.toString();
+            }
+
+            LOGGER.info("Profile JSON received");
+
+            // Step 2: Parse JSON using Gson
+            Gson gson = new Gson();
+            JsonObject profile = gson.fromJson(jsonResponse, JsonObject.class);
+
+            // Get the properties array
+            if (!profile.has("properties")) {
+                LOGGER.warn("No properties found in profile");
+                return createDefaultSkin();
+            }
+
+            var properties = profile.getAsJsonArray("properties");
+            if (properties.size() == 0) {
+                LOGGER.warn("Properties array is empty");
+                return createDefaultSkin();
+            }
+
+            // Find the textures property
+            String base64Textures = null;
+            for (var element : properties) {
+                JsonObject property = element.getAsJsonObject();
+                if (property.has("name") && "textures".equals(property.get("name").getAsString())) {
+                    base64Textures = property.get("value").getAsString();
+                    break;
+                }
+            }
+
+            if (base64Textures == null) {
+                LOGGER.warn("No textures property found");
+                return createDefaultSkin();
+            }
+
+            // Decode base64
+            byte[] decoded = java.util.Base64.getDecoder().decode(base64Textures);
+            String texturesJson = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+
+            LOGGER.info("Decoded textures JSON");
+
+            // Parse textures JSON
+            JsonObject textures = gson.fromJson(texturesJson, JsonObject.class);
+            if (!textures.has("textures") || !textures.getAsJsonObject("textures").has("SKIN")) {
+                LOGGER.warn("No SKIN texture found");
+                return createDefaultSkin();
+            }
+
+            JsonObject skin = textures.getAsJsonObject("textures").getAsJsonObject("SKIN");
+            if (!skin.has("url")) {
+                LOGGER.warn("No URL in SKIN texture");
+                return createDefaultSkin();
+            }
+
+            String skinUrl = skin.get("url").getAsString();
+
+            LOGGER.info("Downloading skin from: {}", skinUrl);
+
+            // Step 3: Download skin
+            java.net.URL skinUrlObj = new java.net.URL(skinUrl);
+            java.net.HttpURLConnection skinConnection = (java.net.HttpURLConnection) skinUrlObj.openConnection();
+            skinConnection.setRequestMethod("GET");
+            skinConnection.setConnectTimeout(5000);
+            skinConnection.setReadTimeout(5000);
+
+            int skinResponseCode = skinConnection.getResponseCode();
+            if (skinResponseCode != 200) {
+                LOGGER.warn("Failed to download skin, HTTP {}", skinResponseCode);
+                return createDefaultSkin();
+            }
+
+            try (InputStream stream = skinConnection.getInputStream()) {
+                NativeImage downloadedSkin = NativeImage.read(stream);
+                LOGGER.info("Successfully downloaded skin from Mojang API: {}x{}", downloadedSkin.getWidth(), downloadedSkin.getHeight());
+                return downloadedSkin;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error downloading skin from Mojang API", e);
+            return createDefaultSkin();
         }
     }
 }

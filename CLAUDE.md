@@ -24,6 +24,49 @@ This is a Fabric mod for Minecraft 1.21.3 called "Webcam Head" that displays web
 - `/webcam stats` - Show streaming statistics
 - `/webcam join <roomId>` - Join a specific streaming room
 
+### Camera Permissions (macOS)
+
+**IMPORTANT:** On macOS, camera permissions work differently depending on how you launch Minecraft.
+
+#### For Development (IntelliJ / Gradle) ✅
+
+When running via IntelliJ IDEA or `./gradlew runClient`, camera permissions work perfectly:
+
+1. **Run Minecraft in dev mode:**
+   ```bash
+   ./gradlew runClient
+   ```
+2. **Press V** to activate the webcam
+3. **macOS will show a permission prompt** - click "Allow"
+4. ✅ Camera works immediately!
+
+This is the **recommended way** for development and testing.
+
+#### For Production (Minecraft Launcher) ⚠️
+
+The official Minecraft launcher uses a standalone Java runtime that doesn't properly trigger macOS permission prompts.
+
+**Workaround:** Use development mode at least once to grant permissions, then the launcher version should work.
+
+**Complete guide:** See [MACOS_CAMERA_FIX.md](MACOS_CAMERA_FIX.md) for detailed solutions.
+
+#### Quick Troubleshooting
+
+1. **Not getting a permission prompt?**
+   - Use `./gradlew runClient` instead of the launcher
+   - Or check [MACOS_CAMERA_FIX.md](MACOS_CAMERA_FIX.md) for manual solutions
+
+2. **Camera still not working?**
+   - Check no other app is using the camera (Zoom, Skype, etc.)
+   - Run: `tccutil reset Camera` and try again
+   - Use `/webcam list` to verify cameras are detected
+   - Check game logs for detailed errors
+
+3. **Permission was granted but camera fails?**
+   - The webcam may not support the requested resolution
+   - Check logs - it should now show detailed error messages
+   - Try a different camera with `/webcam device <index>`
+
 ## Build System
 
 **Build the mod:**

@@ -43,18 +43,48 @@ public class WebcamManager {
         try {
             grabber = new OpenCVFrameGrabber(deviceIndex);
             LOGGER.info("Attempting to start webcam device index: {}", deviceIndex);
-            grabber.setImageWidth(targetWidth);
-            grabber.setImageHeight(targetHeight);
+
+            // Try without setting resolution first - let camera use its default
+            // grabber.setImageWidth(targetWidth);
+            // grabber.setImageHeight(targetHeight);
             grabber.setFrameRate(targetFps);
+
+            LOGGER.info("Starting frame grabber...");
             grabber.start();
+
+            // Give the camera time to initialize
+            LOGGER.info("Waiting for camera to initialize...");
+            Thread.sleep(500);
+
+            // Try to grab a test frame to verify the camera is working
+            LOGGER.info("Testing frame capture...");
+            Frame testFrame = grabber.grab();
+            if (testFrame == null || testFrame.image == null) {
+                throw new FrameGrabber.Exception("Test frame capture failed - camera may not be ready");
+            }
+            LOGGER.info("Test frame captured successfully ({}x{})", testFrame.imageWidth, testFrame.imageHeight);
 
             isRunning = true;
             startCaptureThread();
 
-            LOGGER.info("Webcam started successfully ({}x{} @ {}fps)", targetWidth, targetHeight, targetFps);
+            LOGGER.info("Webcam started successfully @ {}fps", targetFps);
             return true;
         } catch (FrameGrabber.Exception e) {
-            LOGGER.error("Failed to start webcam", e);
+            LOGGER.error("Failed to start webcam: {}", e.getMessage());
+            LOGGER.error("Make sure camera permissions are granted in System Settings > Privacy & Security > Camera");
+            if (grabber != null) {
+                try {
+                    grabber.stop();
+                    grabber.release();
+                } catch (Exception ex) {
+                    // Ignore cleanup errors
+                }
+                grabber = null;
+            }
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("Webcam start interrupted");
             return false;
         }
     }
@@ -116,6 +146,14 @@ public class WebcamManager {
         Mat mat = converter.convert(frame);
         if (mat == null) {
             return null;
+        }
+
+        // Resize to target dimensions if needed
+        if (mat.cols() != targetWidth || mat.rows() != targetHeight) {
+            Mat resized = new Mat();
+            org.bytedeco.opencv.global.opencv_imgproc.resize(mat, resized,
+                new org.bytedeco.opencv.opencv_core.Size(targetWidth, targetHeight));
+            mat = resized;
         }
 
         int width = mat.cols();

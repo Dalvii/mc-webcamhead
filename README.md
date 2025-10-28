@@ -103,6 +103,31 @@ mc-webcamhead/
 3. Copy `webcamhead-X.X.X.jar` to `.minecraft/mods/`
 4. Launch Minecraft
 
+#### macOS Camera Permissions ⚠️
+
+**KNOWN ISSUE:** Due to macOS security restrictions, the camera permission popup does not appear when using the official Minecraft launcher. This is a macOS limitation, not a mod bug.
+
+**Solutions:**
+
+1. **Use Prism Launcher (Recommended for End Users):**
+   - Download: [Prism Launcher](https://prismlauncher.org/)
+   - ✅ **CONFIRMED WORKING** - Properly triggers the camera permission popup
+   - Create a Fabric instance, add the mod, and launch
+   - When you press V, macOS will ask for camera permission
+   - Click "Allow" and the webcam will work perfectly!
+
+2. **Use Development Mode (Recommended for Development):**
+   ```bash
+   ./gradlew runClient  # Works perfectly! ✅
+   ```
+
+3. **Other Alternative Launchers:**
+   - [MultiMC](https://multimc.org/) (may also work)
+
+**Why this happens:** macOS requires applications to be proper .app bundles with Info.plist to request camera access. The official Minecraft launcher's Java runtime doesn't meet this requirement, but Prism Launcher does.
+
+**For more details:** See [MACOS_CAMERA_FIX.md](MACOS_CAMERA_FIX.md)
+
 #### Server Setup
 ```bash
 # Install and start the streaming server
@@ -255,6 +280,31 @@ mc-webcamhead/
 2. Installez Fabric Loader et Fabric API
 3. Copiez `webcamhead-X.X.X.jar` dans `.minecraft/mods/`
 4. Lancez Minecraft
+
+#### Permissions Caméra macOS ⚠️
+
+**PROBLÈME CONNU :** En raison des restrictions de sécurité macOS, le popup de permission caméra n'apparaît pas avec le launcher Minecraft officiel. C'est une limitation macOS, pas un bug du mod.
+
+**Solutions :**
+
+1. **Utiliser Prism Launcher (Recommandé pour Utilisateurs Finaux) :**
+   - Télécharger : [Prism Launcher](https://prismlauncher.org/)
+   - ✅ **CONFIRMÉ FONCTIONNEL** - Déclenche correctement le popup de permission caméra
+   - Créez une instance Fabric, ajoutez le mod, et lancez
+   - Quand vous appuyez sur V, macOS demandera la permission caméra
+   - Cliquez sur "Autoriser" et la webcam fonctionnera parfaitement !
+
+2. **Utiliser le Mode Développement (Recommandé pour Développement) :**
+   ```bash
+   ./gradlew runClient  # Fonctionne parfaitement ! ✅
+   ```
+
+3. **Autres Launchers Alternatifs :**
+   - [MultiMC](https://multimc.org/) (peut aussi fonctionner)
+
+**Pourquoi cela arrive :** macOS exige que les applications soient des bundles .app avec Info.plist pour demander l'accès caméra. Le runtime Java du launcher Minecraft officiel ne répond pas à cette exigence, mais Prism Launcher oui.
+
+**Pour plus de détails :** Voir [MACOS_CAMERA_FIX.md](MACOS_CAMERA_FIX.md)
 
 #### Configuration du serveur
 ```bash
