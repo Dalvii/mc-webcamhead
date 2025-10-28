@@ -60,13 +60,14 @@ dependencies {
     implementation 'org.bytedeco:openblas:0.3.26-1.5.10:macosx-arm64'
 
     // WebSocket client for signaling server
-    implementation 'org.java-websocket:Java-WebSocket:1.5.6'
+    modImplementation 'org.java-websocket:Java-WebSocket:1.5.6'
 
     // JSON handling
-    implementation 'com.google.code.gson:gson:2.10.1'
+    modImplementation 'com.google.code.gson:gson:2.10.1'
+    modImplementation 'org.json:json:20231013'
 
     // Socket.IO client for Java
-    implementation 'io.socket:socket.io-client:2.1.0'
+    modImplementation 'io.socket:socket.io-client:2.1.0'
 
     // Include JavaCV and all natives in the mod jar
     include 'org.bytedeco:javacv:1.5.10'
@@ -80,6 +81,7 @@ dependencies {
     // Include WebSocket and JSON libraries
     include 'org.java-websocket:Java-WebSocket:1.5.6'
     include 'com.google.code.gson:gson:2.10.1'
+    include 'org.json:json:20231013'
     include 'io.socket:socket.io-client:2.1.0'
     include 'io.socket:engine.io-client:2.1.0'
     include 'com.squareup.okhttp3:okhttp:3.12.12'
