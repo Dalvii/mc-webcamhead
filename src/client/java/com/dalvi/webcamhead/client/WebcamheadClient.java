@@ -72,6 +72,8 @@ public class WebcamheadClient implements ClientModInitializer {
 
         // Register join event to initialize multiplayer when joining a world/server
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            LOGGER.info("Player joined world - multiplayer enabled: {}, server configured: {}",
+                ModConfig.isMultiplayerEnabled(), ModConfig.isServerConfigured());
             if (ModConfig.isMultiplayerEnabled()) {
                 initializeMultiplayer();
             }

@@ -140,11 +140,29 @@ public class WebcamCommand {
 
     private static int showState(CommandContext<FabricClientCommandSource> context) {
         WebcamheadClient client = WebcamheadClient.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
 
         context.getSource().sendFeedback(Text.literal("§6=== Webcam State ==="));
         context.getSource().sendFeedback(Text.literal("§eWebcam Active: §f" + (client != null && client.isWebcamActive())));
-        context.getSource().sendFeedback(Text.literal("§eSignaling Connected: §f" + (client != null && client.isSignalingConnected())));
+        context.getSource().sendFeedback(Text.literal("§eSignaling Connected: " +
+            (client != null && client.isSignalingConnected() ? "§aYes" : "§cNo")));
         context.getSource().sendFeedback(Text.literal("§eCurrent Room: §f" + ModConfig.getRoomId()));
+        context.getSource().sendFeedback(Text.literal("§eMultiplayer Enabled: " +
+            (ModConfig.isMultiplayerEnabled() ? "§aYes" : "§cNo")));
+        context.getSource().sendFeedback(Text.literal("§eServer Configured: " +
+            (ModConfig.isServerConfigured() ? "§aYes §f(" + ModConfig.getSignalingServerUrl() + ")" : "§cNo")));
+        context.getSource().sendFeedback(Text.literal("§eIn World: " +
+            (mc.player != null ? "§aYes" : "§cNo")));
+
+        if (ModConfig.isMultiplayerEnabled() && ModConfig.isServerConfigured() && !client.isSignalingConnected()) {
+            context.getSource().sendFeedback(Text.literal(""));
+            context.getSource().sendFeedback(Text.literal("§c⚠ Not connected to server!"));
+            if (mc.player == null) {
+                context.getSource().sendFeedback(Text.literal("§7→ Join a world to connect"));
+            } else {
+                context.getSource().sendFeedback(Text.literal("§7→ Check server URL and logs for errors"));
+            }
+        }
 
         return 1;
     }

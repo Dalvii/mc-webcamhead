@@ -93,9 +93,53 @@ public class SignalingClient {
         socket.on(Socket.EVENT_CONNECT_ERROR, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
+                if (args.length > 0) {
+                    Exception e = args[0] instanceof Exception ? (Exception) args[0] : null;
+                    if (e != null) {
+                        LOGGER.error("Connection error: {}", e.getMessage(), e);
+                        sendChatMessage("§cStreaming connection error: " + e.getMessage());
+                    } else {
+                        String error = args[0].toString();
+                        LOGGER.error("Connection error: {}", error);
+                        sendChatMessage("§cStreaming connection error: " + error);
+                    }
+                } else {
+                    LOGGER.error("Connection error: Unknown error");
+                    sendChatMessage("§cStreaming connection error (check logs)");
+                }
+            }
+        });
+
+        socket.on(Socket.EVENT_CONNECT_TIMEOUT, new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                LOGGER.error("Connection timeout - server at {} did not respond", serverUrl);
+                sendChatMessage("§cConnection timeout - server not responding");
+            }
+        });
+
+        socket.on(Socket.EVENT_ERROR, new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
                 String error = args.length > 0 ? args[0].toString() : "Unknown";
-                LOGGER.error("Connection error: {}", error);
-                sendChatMessage("§cStreaming connection error: " + error);
+                LOGGER.error("Socket error: {}", error);
+                sendChatMessage("§cSocket error: " + error);
+            }
+        });
+
+        socket.on(Socket.EVENT_RECONNECT_ATTEMPT, new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                int attempt = args.length > 0 ? (Integer) args[0] : 0;
+                LOGGER.info("Reconnection attempt #{}", attempt);
+            }
+        });
+
+        socket.on(Socket.EVENT_RECONNECT_FAILED, new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                LOGGER.error("Reconnection failed - giving up");
+                sendChatMessage("§cFailed to reconnect to streaming server");
             }
         });
 
