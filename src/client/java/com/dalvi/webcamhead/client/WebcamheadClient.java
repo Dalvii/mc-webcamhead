@@ -49,6 +49,9 @@ public class WebcamheadClient implements ClientModInitializer {
         instance = this;
         LOGGER.info("Initializing WebcamHead mod");
 
+        // Load configuration
+        ModConfig.load();
+
         // Register commands
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             WebcamCommand.register(dispatcher);
@@ -280,6 +283,8 @@ public class WebcamheadClient implements ClientModInitializer {
      * Initialize multiplayer streaming
      */
     private void initializeMultiplayer() {
+        LOGGER.info("initializeMultiplayer() called");
+
         // Check if server is configured
         if (!ModConfig.isServerConfigured()) {
             LOGGER.warn("Signaling server not configured, skipping multiplayer initialization");
@@ -287,6 +292,7 @@ public class WebcamheadClient implements ClientModInitializer {
         }
 
         MinecraftClient client = MinecraftClient.getInstance();
+        LOGGER.info("Client player status: {}", client.player != null ? "exists" : "null");
 
         // Wait for player to join a world
         new Thread(() -> {
@@ -330,11 +336,12 @@ public class WebcamheadClient implements ClientModInitializer {
                     setupVideoStreamCallbacks();
 
                     // Connect to server
+                    LOGGER.info("Calling signalingClient.connect()...");
                     signalingClient.connect();
 
-                    LOGGER.info("Multiplayer streaming initialized");
+                    LOGGER.info("Multiplayer streaming initialized (connection in progress)");
                     if (client.player != null) {
-                        client.player.sendMessage(Text.literal("§aConnected to signaling server"), false);
+                        client.player.sendMessage(Text.literal("§eConnecting to signaling server..."), false);
                     }
                 } catch (Exception e) {
                     LOGGER.error("Failed to initialize multiplayer streaming", e);

@@ -108,12 +108,14 @@ public class WebcamCommand {
             } else {
                 // Not connected yet, try to connect now if multiplayer is enabled and we're in a world
                 if (ModConfig.isMultiplayerEnabled()) {
-                    context.getSource().sendFeedback(Text.literal("§eConnecting to server..."));
+                    context.getSource().sendFeedback(Text.literal("§eConnecting to server (check logs for progress)..."));
                     client.reconnectSignaling();
                 } else {
                     context.getSource().sendFeedback(Text.literal("§7Multiplayer is disabled. Enable it in config to connect."));
                 }
             }
+        } else {
+            context.getSource().sendFeedback(Text.literal("§cWebcamheadClient is null!"));
         }
 
         return 1;
