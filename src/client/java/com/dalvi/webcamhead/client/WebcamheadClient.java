@@ -47,10 +47,7 @@ public class WebcamheadClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         instance = this;
-        LOGGER.info("========================================");
-        LOGGER.info("WebcamHead v1.1.0 - BUILD: 2024-11-09");
         LOGGER.info("Initializing WebcamHead mod");
-        LOGGER.info("========================================");
 
         // Load configuration
         ModConfig.load();
@@ -78,14 +75,8 @@ public class WebcamheadClient implements ClientModInitializer {
 
         // Register join event to initialize multiplayer when joining a world/server
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            LOGGER.info("========================================");
-            LOGGER.info("PLAYER JOINED WORLD");
-            LOGGER.info("Multiplayer enabled: {}", ModConfig.isMultiplayerEnabled());
-            LOGGER.info("Server configured: {}", ModConfig.isServerConfigured());
-            if (ModConfig.isServerConfigured()) {
-                LOGGER.info("Server URL: {}", ModConfig.getSignalingServerUrl());
-            }
-            LOGGER.info("========================================");
+            LOGGER.info("Player joined world - multiplayer enabled: {}, server configured: {}",
+                ModConfig.isMultiplayerEnabled(), ModConfig.isServerConfigured());
             if (ModConfig.isMultiplayerEnabled()) {
                 initializeMultiplayer();
             }
@@ -449,45 +440,19 @@ public class WebcamheadClient implements ClientModInitializer {
     }
 
     public void reconnectSignaling() {
-        LOGGER.info("========================================");
-        LOGGER.info("reconnectSignaling() CALLED");
-        LOGGER.info("========================================");
-
         // Disconnect current signaling client
         if (signalingClient != null) {
-            LOGGER.info("Disconnecting existing signaling client...");
             signalingClient.disconnect();
             signalingClient = null;
-            LOGGER.info("Signaling client disconnected");
-        } else {
-            LOGGER.info("No existing signaling client to disconnect");
         }
 
         // Reset video stream client
         videoStreamClient = null;
-        LOGGER.info("Video stream client reset");
 
         // Reinitialize multiplayer
-        LOGGER.info("Checking conditions for multiplayer initialization:");
-        LOGGER.info("- Multiplayer enabled: {}", ModConfig.isMultiplayerEnabled());
-        LOGGER.info("- Server configured: {}", ModConfig.isServerConfigured());
-        if (ModConfig.isServerConfigured()) {
-            LOGGER.info("- Server URL: {}", ModConfig.getSignalingServerUrl());
-        }
-
         if (ModConfig.isMultiplayerEnabled() && ModConfig.isServerConfigured()) {
-            LOGGER.info("Conditions met! Calling initializeMultiplayer()...");
             initializeMultiplayer();
-        } else {
-            LOGGER.warn("!!! CONDITIONS NOT MET - NOT INITIALIZING MULTIPLAYER !!!");
-            if (!ModConfig.isMultiplayerEnabled()) {
-                LOGGER.warn("Reason: Multiplayer is DISABLED");
-            }
-            if (!ModConfig.isServerConfigured()) {
-                LOGGER.warn("Reason: Server is NOT CONFIGURED");
-            }
         }
-        LOGGER.info("========================================");
     }
 
     /**

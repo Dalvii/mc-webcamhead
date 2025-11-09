@@ -44,14 +44,7 @@ public class SignalingClient {
      * Connect to the signaling server
      */
     public void connect() {
-        LOGGER.info("=== SignalingClient.connect() CALLED ===");
-        LOGGER.info("Server URL: {}", serverUrl);
-        LOGGER.info("Player UUID: {}", playerUUID);
-        LOGGER.info("Player Name: {}", playerName);
-        LOGGER.info("Room ID: {}", roomId);
-
         try {
-            LOGGER.info("Step 1: Creating IO.Options...");
             IO.Options options = new IO.Options();
             options.reconnection = true;
             options.reconnectionDelay = 1000;
@@ -61,27 +54,17 @@ public class SignalingClient {
 
             // Set transports to try websocket first, then polling
             options.transports = new String[]{"websocket", "polling"};
-            LOGGER.info("Step 2: IO.Options created successfully");
 
-            LOGGER.info("Step 3: Creating Socket.IO socket for URL: {}", serverUrl);
             socket = IO.socket(URI.create(serverUrl), options);
-            LOGGER.info("Step 4: Socket created successfully: {}", socket != null ? "NOT NULL" : "NULL");
 
-            LOGGER.info("Step 5: Setting up event handlers...");
             setupEventHandlers();
-            LOGGER.info("Step 6: Event handlers set up successfully");
 
-            LOGGER.info("Step 7: Calling socket.connect()...");
             socket.connect();
-            LOGGER.info("Step 8: socket.connect() returned (async operation)");
 
-            LOGGER.info("Step 9: Sending chat message...");
+            LOGGER.info("Connecting to signaling server at {}", serverUrl);
             sendChatMessage("§eConnecting to streaming server...");
-            LOGGER.info("=== SignalingClient.connect() COMPLETED ===");
         } catch (Exception e) {
-            LOGGER.error("!!! EXCEPTION in SignalingClient.connect() !!!", e);
-            LOGGER.error("Exception type: {}", e.getClass().getName());
-            LOGGER.error("Exception message: {}", e.getMessage());
+            LOGGER.error("Failed to connect to signaling server", e);
             sendChatMessage("§cFailed to connect: " + e.getMessage());
         }
     }
@@ -90,36 +73,27 @@ public class SignalingClient {
      * Setup Socket.IO event handlers
      */
     private void setupEventHandlers() {
-        LOGGER.info("Setting up Socket.IO event handlers...");
-
         socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                LOGGER.info(">>> EVENT_CONNECT fired! <<<");
                 LOGGER.info("Connected to signaling server");
                 sendChatMessage("§aConnected to streaming server");
                 joinRoom();
             }
         });
-        LOGGER.info("Registered EVENT_CONNECT handler");
 
         socket.on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                LOGGER.warn(">>> EVENT_DISCONNECT fired! <<<");
                 LOGGER.warn("Disconnected from signaling server");
                 sendChatMessage("§cDisconnected from streaming server");
             }
         });
-        LOGGER.info("Registered EVENT_DISCONNECT handler");
 
         socket.on(Socket.EVENT_CONNECT_ERROR, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                LOGGER.error(">>> EVENT_CONNECT_ERROR fired! <<<");
-                LOGGER.error("Args length: {}", args.length);
                 if (args.length > 0) {
-                    LOGGER.error("Args[0] type: {}", args[0].getClass().getName());
                     Exception e = args[0] instanceof Exception ? (Exception) args[0] : null;
                     if (e != null) {
                         LOGGER.error("Connection error: {}", e.getMessage(), e);
@@ -130,54 +104,45 @@ public class SignalingClient {
                         sendChatMessage("§cStreaming connection error: " + error);
                     }
                 } else {
-                    LOGGER.error("Connection error: Unknown error (no args)");
+                    LOGGER.error("Connection error: Unknown error");
                     sendChatMessage("§cStreaming connection error (check logs)");
                 }
             }
         });
-        LOGGER.info("Registered EVENT_CONNECT_ERROR handler");
 
         // Using string literals for events not defined in Socket.IO 2.1.0
         socket.on("connect_timeout", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                LOGGER.error(">>> connect_timeout fired! <<<");
                 LOGGER.error("Connection timeout - server at {} did not respond", serverUrl);
                 sendChatMessage("§cConnection timeout - server not responding");
             }
         });
-        LOGGER.info("Registered connect_timeout handler");
 
         socket.on("error", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                LOGGER.error(">>> error event fired! <<<");
                 String error = args.length > 0 ? args[0].toString() : "Unknown";
                 LOGGER.error("Socket error: {}", error);
                 sendChatMessage("§cSocket error: " + error);
             }
         });
-        LOGGER.info("Registered error handler");
 
         socket.on("reconnect_attempt", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                LOGGER.info(">>> reconnect_attempt fired! <<<");
                 int attempt = args.length > 0 ? ((Number) args[0]).intValue() : 0;
                 LOGGER.info("Reconnection attempt #{}", attempt);
             }
         });
-        LOGGER.info("Registered reconnect_attempt handler");
 
         socket.on("reconnect_failed", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                LOGGER.error(">>> reconnect_failed fired! <<<");
                 LOGGER.error("Reconnection failed - giving up");
                 sendChatMessage("§cFailed to reconnect to streaming server");
             }
         });
-        LOGGER.info("Registered reconnect_failed handler");
 
         socket.on("player:joined", new Emitter.Listener() {
             @Override
@@ -347,13 +312,8 @@ public class SignalingClient {
      * Send a message to chat (via callback)
      */
     private void sendChatMessage(String message) {
-        LOGGER.info("sendChatMessage called: {}", message);
-        LOGGER.info("onChatMessage callback is: {}", onChatMessage != null ? "SET" : "NULL");
         if (onChatMessage != null) {
             onChatMessage.accept(message);
-            LOGGER.info("Chat message sent via callback");
-        } else {
-            LOGGER.warn("!!! onChatMessage is NULL - message not sent to chat !!!");
         }
     }
 
