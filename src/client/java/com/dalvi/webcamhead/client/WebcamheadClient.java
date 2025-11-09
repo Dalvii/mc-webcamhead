@@ -47,7 +47,10 @@ public class WebcamheadClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         instance = this;
+        LOGGER.info("========================================");
+        LOGGER.info("WebcamHead v1.1.0 - BUILD: 2024-11-09");
         LOGGER.info("Initializing WebcamHead mod");
+        LOGGER.info("========================================");
 
         // Load configuration
         ModConfig.load();
@@ -75,8 +78,14 @@ public class WebcamheadClient implements ClientModInitializer {
 
         // Register join event to initialize multiplayer when joining a world/server
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            LOGGER.info("Player joined world - multiplayer enabled: {}, server configured: {}",
-                ModConfig.isMultiplayerEnabled(), ModConfig.isServerConfigured());
+            LOGGER.info("========================================");
+            LOGGER.info("PLAYER JOINED WORLD");
+            LOGGER.info("Multiplayer enabled: {}", ModConfig.isMultiplayerEnabled());
+            LOGGER.info("Server configured: {}", ModConfig.isServerConfigured());
+            if (ModConfig.isServerConfigured()) {
+                LOGGER.info("Server URL: {}", ModConfig.getSignalingServerUrl());
+            }
+            LOGGER.info("========================================");
             if (ModConfig.isMultiplayerEnabled()) {
                 initializeMultiplayer();
             }
