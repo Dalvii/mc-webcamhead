@@ -1,5 +1,11 @@
 # Version Management Guide
 
+## Minecraft Compatibility
+
+**This mod is compatible with all Minecraft 1.21.x versions** (1.21.0, 1.21.1, 1.21.2, 1.21.3, etc.)
+
+The mod is built with 1.21.3 but will work on any 1.21.x version. When Minecraft 1.22 is released, a new major version of the mod will be required.
+
 ## How Releases Work
 
 This project uses **automated releases** via GitHub Actions. Every push to `main` triggers a build and potentially creates a new release.
@@ -76,17 +82,19 @@ GitHub Actions will automatically:
 
 ### When to increment MAJOR (2.0.0)
 - Breaking changes
-- Minecraft version update
+- Minecraft **major** version update (e.g., 1.21.x → 1.22.x)
 - Complete rewrites
 - Removed features
 - Changed configuration format
 
 **Example changes:**
-- Updated to Minecraft 1.22
+- Updated to Minecraft 1.22 (major version change)
 - Changed from WebRTC to Socket.IO (breaking API)
 - Removed old panel rendering mode
 
 **Version change:** `1.5.2` → `2.0.0`
+
+**Note:** Minor Minecraft updates (1.21.3 → 1.21.4) do NOT require a major version bump, as the mod is compatible with all 1.21.x versions.
 
 ---
 

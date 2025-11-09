@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Fabric mod for Minecraft 1.21.3 called "Webcam Head" that displays webcam video on player heads in-game. The mod captures webcam feed using JavaCV (OpenCV) and renders it as a 3D panel above the player's head using OpenGL. The project uses Fabric Loom for building and follows the standard Fabric mod structure with split source sets for common and client-only code.
+This is a Fabric mod for Minecraft 1.21.x called "Webcam Head" that displays webcam video on player heads in-game. The mod captures webcam feed using JavaCV (OpenCV) and renders it as a 3D panel above the player's head using OpenGL. The project uses Fabric Loom for building and follows the standard Fabric mod structure with split source sets for common and client-only code.
 
 ### Features
 - Real-time webcam capture and rendering
@@ -157,10 +157,10 @@ Both are configured for Java 21 compatibility with strict annotation requirement
 ## Technical Requirements
 
 - **Java Version:** 21
-- **Minecraft Version:** 1.21.3
-- **Fabric Loader:** 0.17.3
-- **Yarn Mappings:** 1.21.3+build.2
-- **Fabric API:** 0.114.1+1.21.3
+- **Minecraft Version:** 1.21.x (compatible with all 1.21 versions)
+- **Fabric Loader:** 0.17.3+
+- **Yarn Mappings:** 1.21.3+build.2 (build version)
+- **Fabric API:** 0.114.1+ (for 1.21.x)
 
 ## Package Structure
 

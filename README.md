@@ -4,7 +4,7 @@
 
 **Transform your Minecraft skin into a live webcam feed! See your friends' faces on their in-game characters in real-time.**
 
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.3-green.svg)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.x-green.svg)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/Fabric-Mod-orange.svg)](https://fabricmc.net/)
 [![Download](https://img.shields.io/badge/Download-Latest-blue.svg)](../../releases)
 
@@ -51,8 +51,9 @@ No complicated setup, no technical knowledge required!
 2. **Install Fabric Loader**:
    - Go to [FabricMC](https://fabricmc.net/use/installer/)
    - Download and run the installer
-   - Select Minecraft 1.21.3 and click Install
+   - Select your Minecraft 1.21.x version and click Install
 3. **Download Fabric API**: [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api) or [Modrinth](https://modrinth.com/mod/fabric-api)
+   - Get the version matching your Minecraft 1.21.x installation
 
 #### Step 2: Install the Mod
 
@@ -282,9 +283,9 @@ You'll see a grid with everyone's webcam feed!
 
 ### Minimum Requirements
 
-- **Minecraft**: 1.21.3
+- **Minecraft**: 1.21.x (any 1.21 version)
 - **Mod Loader**: Fabric Loader 0.17.3+
-- **Fabric API**: 0.114.1+1.21.3+
+- **Fabric API**: 0.114.1+ (for your 1.21.x version)
 - **Java**: 21 or newer
 - **Webcam**: Any USB or built-in webcam
 - **RAM**: 4GB minimum (standard Minecraft requirements)

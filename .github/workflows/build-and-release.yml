@@ -85,13 +85,30 @@ jobs:
           echo "$CHANGELOG" > changelog.txt
           echo "Previous tag: $PREV_TAG"
 
+      - name: Prepare release notes
+        run: |
+          echo "## WebcamHead v${{ steps.get_version.outputs.version }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "**Compatible with Minecraft 1.21.x** (all 1.21 versions)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Changes" >> release_notes.md
+          cat changelog.txt >> release_notes.md
+          echo "" >> release_notes.md
+          echo "---" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Installation" >> release_notes.md
+          echo "1. Install Fabric Loader for your Minecraft 1.21.x version" >> release_notes.md
+          echo "2. Download and install Fabric API (1.21.x compatible version)" >> release_notes.md
+          echo "3. Place this mod JAR in your mods folder" >> release_notes.md
+          echo "4. Launch Minecraft and press **V** to activate webcam!" >> release_notes.md
+
       - name: Create Release
         if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
-          name: WebcamHead v${{ steps.get_version.outputs.version }}
-          body_path: changelog.txt
+          name: WebcamHead v${{ steps.get_version.outputs.version }} (MC 1.21.x)
+          body_path: release_notes.md
           files: |
             ${{ steps.find_jar.outputs.jar_path }}
           draft: false
