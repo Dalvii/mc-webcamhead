@@ -449,19 +449,45 @@ public class WebcamheadClient implements ClientModInitializer {
     }
 
     public void reconnectSignaling() {
+        LOGGER.info("========================================");
+        LOGGER.info("reconnectSignaling() CALLED");
+        LOGGER.info("========================================");
+
         // Disconnect current signaling client
         if (signalingClient != null) {
+            LOGGER.info("Disconnecting existing signaling client...");
             signalingClient.disconnect();
             signalingClient = null;
+            LOGGER.info("Signaling client disconnected");
+        } else {
+            LOGGER.info("No existing signaling client to disconnect");
         }
 
         // Reset video stream client
         videoStreamClient = null;
+        LOGGER.info("Video stream client reset");
 
         // Reinitialize multiplayer
-        if (ModConfig.isMultiplayerEnabled() && ModConfig.isServerConfigured()) {
-            initializeMultiplayer();
+        LOGGER.info("Checking conditions for multiplayer initialization:");
+        LOGGER.info("- Multiplayer enabled: {}", ModConfig.isMultiplayerEnabled());
+        LOGGER.info("- Server configured: {}", ModConfig.isServerConfigured());
+        if (ModConfig.isServerConfigured()) {
+            LOGGER.info("- Server URL: {}", ModConfig.getSignalingServerUrl());
         }
+
+        if (ModConfig.isMultiplayerEnabled() && ModConfig.isServerConfigured()) {
+            LOGGER.info("Conditions met! Calling initializeMultiplayer()...");
+            initializeMultiplayer();
+        } else {
+            LOGGER.warn("!!! CONDITIONS NOT MET - NOT INITIALIZING MULTIPLAYER !!!");
+            if (!ModConfig.isMultiplayerEnabled()) {
+                LOGGER.warn("Reason: Multiplayer is DISABLED");
+            }
+            if (!ModConfig.isServerConfigured()) {
+                LOGGER.warn("Reason: Server is NOT CONFIGURED");
+            }
+        }
+        LOGGER.info("========================================");
     }
 
     /**
