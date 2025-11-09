@@ -8,6 +8,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
 import java.util.List;
@@ -88,6 +89,14 @@ public class WebcamCommand {
 
         ModConfig.setSignalingServerUrl(url);
         context.getSource().sendFeedback(Text.literal("§aSignaling server URL set to: §f" + url));
+
+        // Check if player is in a world
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.player == null) {
+            context.getSource().sendFeedback(Text.literal("§eServer URL saved. Join a world to connect."));
+            return 1;
+        }
+
         context.getSource().sendFeedback(Text.literal("§eYou can now start your webcam with the V key"));
 
         // If already connected, reconnect to the new server
@@ -101,6 +110,8 @@ public class WebcamCommand {
                 if (ModConfig.isMultiplayerEnabled()) {
                     context.getSource().sendFeedback(Text.literal("§eConnecting to server..."));
                     client.reconnectSignaling();
+                } else {
+                    context.getSource().sendFeedback(Text.literal("§7Multiplayer is disabled. Enable it in config to connect."));
                 }
             }
         }

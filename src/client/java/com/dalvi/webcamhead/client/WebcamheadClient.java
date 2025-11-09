@@ -288,13 +288,21 @@ public class WebcamheadClient implements ClientModInitializer {
 
         // Wait for player to join a world
         new Thread(() -> {
-            // Wait for player to exist
-            while (client.player == null) {
+            // Wait for player to exist (with timeout)
+            int attempts = 0;
+            while (client.player == null && attempts < 100) {
                 try {
                     Thread.sleep(100);
+                    attempts++;
                 } catch (InterruptedException e) {
                     return;
                 }
+            }
+
+            // If player still doesn't exist, abort
+            if (client.player == null) {
+                LOGGER.warn("Failed to initialize multiplayer: player not found after timeout");
+                return;
             }
 
             // Initialize on main thread
@@ -323,8 +331,14 @@ public class WebcamheadClient implements ClientModInitializer {
                     signalingClient.connect();
 
                     LOGGER.info("Multiplayer streaming initialized");
+                    if (client.player != null) {
+                        client.player.sendMessage(Text.literal("§aConnected to signaling server"), false);
+                    }
                 } catch (Exception e) {
                     LOGGER.error("Failed to initialize multiplayer streaming", e);
+                    if (client.player != null) {
+                        client.player.sendMessage(Text.literal("§cFailed to connect to server: " + e.getMessage()), false);
+                    }
                 }
             });
         }, "MultiplayerInit").start();
