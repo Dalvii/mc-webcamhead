@@ -110,7 +110,8 @@ public class SignalingClient {
             }
         });
 
-        socket.on(Socket.EVENT_CONNECT_TIMEOUT, new Emitter.Listener() {
+        // Using string literals for events not defined in Socket.IO 2.1.0
+        socket.on("connect_timeout", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
                 LOGGER.error("Connection timeout - server at {} did not respond", serverUrl);
@@ -118,7 +119,7 @@ public class SignalingClient {
             }
         });
 
-        socket.on(Socket.EVENT_ERROR, new Emitter.Listener() {
+        socket.on("error", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
                 String error = args.length > 0 ? args[0].toString() : "Unknown";
@@ -127,15 +128,15 @@ public class SignalingClient {
             }
         });
 
-        socket.on(Socket.EVENT_RECONNECT_ATTEMPT, new Emitter.Listener() {
+        socket.on("reconnect_attempt", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                int attempt = args.length > 0 ? (Integer) args[0] : 0;
+                int attempt = args.length > 0 ? ((Number) args[0]).intValue() : 0;
                 LOGGER.info("Reconnection attempt #{}", attempt);
             }
         });
 
-        socket.on(Socket.EVENT_RECONNECT_FAILED, new Emitter.Listener() {
+        socket.on("reconnect_failed", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
                 LOGGER.error("Reconnection failed - giving up");
